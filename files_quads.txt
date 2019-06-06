@@ -23,7 +23,6 @@ tension_2.mp3, MT0010983830.mp3, Q2, good
 transcendence_1.mp3, MT0000218346.mp3, Q4, good
 transcendence_2.mp3, MT0010203716.mp3, Q4, good
 
-Reverse map: Schedl, Panda, Find Disgust
 
 Q1: joy_1, joy_2, power_1, power_2, surprise_1, surprise_2 (6)
 Q2: anger_1, anger_2, fear_1, fear_2, tension_1, tension_2 (6)
