@@ -1,0 +1,31 @@
+anger_1.mp3, MT0035332835.mp3, Q2, good
+anger_2.mp3, MT0003136077.mp3, Q2, good
+disgust_1.mp3, MT0009521580.mp3, Q3, good??- Q2 - remove
+disgust_2.mp3, MT0015715008.mp3, Q3, good??- Q2 - remove
+bitter_1.mp3, MT0007438571.mp3, Q3, good
+bitter_2.mp3, MT0007914044.mp3, Q3, good
+fear_1.mp3, MT0002415184.mp3, Q2, good
+fear_2.mp3, MT0001615005.mp3, Q2, good
+joy_1.mp3, MT0036368550.mp3, Q1, good
+joy_2.mp3, MT0004141823.mp3, Q1, good
+peace_1.mp3, MT0001942272.mp3, Q4, good
+peace_2.mp3, MT0001676671.mp3, Q4, good
+power_1.mp3, MT0011574534.mp3, Q1, good
+power_2.mp3, MT0031996897.mp3, Q1, good
+sad_1.mp3, MT0003352308.mp3, Q3, good
+sad_2.mp3, MT0003053135.mp3, Q3, good
+surprise_1.mp3, MT0002119439.mp3, Q1, good
+surprise_2.mp3, MT0008972801.mp3, Q1, good
+tender_1.mp3, MT0003025046.mp3, Q4, good
+tender_2.mp3, MT0006107326.mp3, Q4, good
+tension_1.mp3, MT0008084656.mp3, Q2, good
+tension_2.mp3, MT0010983830.mp3, Q2, good
+transcendence_1.mp3, MT0000218346.mp3, Q4, good
+transcendence_2.mp3, MT0010203716.mp3, Q4, good
+
+Reverse map: Schedl, Panda, Find Disgust
+
+Q1: joy_1, joy_2, power_1, power_2, surprise_1, surprise_2 (6)
+Q2: anger_1, anger_2, fear_1, fear_2, tension_1, tension_2 (6)
+Q3: bitter_1, bitter_2, sad_1, sad_2 (4)
+Q4: peace_1, peace_2, tender_1, tender_2, transcendence_1, transcendence_2 (6)
