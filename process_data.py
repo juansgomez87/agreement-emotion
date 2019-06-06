@@ -32,13 +32,13 @@ if __name__ == "__main__":
         print('Please select data to process!')
         
     if args.language == 'e' or args.language == 'english':
-        file_name = 'data_english.csv'
+        file_name = './results/data_english.csv'
     elif args.language == 's' or args.language == 'spanish':
-        file_name = 'data_spanish.csv'
+        file_name = './results/data_spanish.csv'
     elif args.language == 'm' or args.language == 'mandarin':
-        file_name = 'data_mandarin.csv'
+        file_name = './results/data_mandarin.csv'
     elif args.language == 'g' or args.language == 'german':
-        file_name = 'data_german.csv'
+        file_name = './results/data_german.csv'
        
     data = []
     with open(file_name, 'r') as f:
