@@ -15,22 +15,22 @@ import pdb
 
 def main(data, lang, comp_flag):
     """
-    Q1: joy_1, joy_2, power_1, power_2, surprise_1, surprise_2 (6)
-    Q2: anger_1, anger_2, fear_1, fear_2, tension_1, tension_2 (6)
-    Q3: bitter_1, bitter_2, sad_1, sad_2 (4)
-    Q4: peace_1, peace_2, tender_1, tender_2, transcendence_1, transcendence_2 (6)
+
     """
     variables = ['anger', 'bitter', 'fear', 'joy', 'peace',  'power',
                  'sad', 'surprise', 'tender', 'tension', 'transc',
-                 'taste', 'familiar', 'lyr_und',  'q1_a_pos_v_neg',
+                 'taste', 'familiar', 'lyr_und',  'q1_a_pos_v_pos',
                  'q2_a_pos_v_neg', 'q3_a_neg_v_neg', 'q4_a_neg_v_pos']
     emotions = ['anger', 'bitter', 'fear', 'joy', 'peace',  'power',
                 'sad', 'surprise', 'tender', 'tension', 'transcendence']
+    quads = ['q1_a_pos_v_pos', 'q2_a_pos_v_neg',
+             'q3_a_neg_v_neg', 'q4_a_neg_v_pos']
     # get list of songs
     dirs = os.listdir('./data_normalized')
     list_songs = [_.replace('.mp3', '') for _ in dirs]
     dict_songs_agree = {}.fromkeys(list_songs)
     dict_emo_agree = {k: [] for k in emotions}
+    dict_quad_agree = {k: [] for k in quads}
 
     # agree_res = pd.DataFrame(np.zeros((len(variables), len(variables))),
     #                          columns=variables,
@@ -51,7 +51,8 @@ def main(data, lang, comp_flag):
         start = song + ':1'
         end = song + ':11'
         dict_songs_agree[song] = krippendorf.alpha(reliability_data=data.loc[:, start: end],
-                                                   value_domain=[1, 2, 3, 4, 5, 6, 7])
+                                                   value_domain=[1, 2, 3, 4, 5, 6, 7],
+                                                   level_of_measurement='ordinal')
 
     # mean over emotions
     for emo in emotions:
@@ -62,7 +63,28 @@ def main(data, lang, comp_flag):
         print(key, np.mean(dict_emo_agree[key]))
 
     # mean over quadrants
+
+    # Q1: joy_1, joy_2, power_1, power_2, surprise_1, surprise_2 (6)
+    # Q2: anger_1, anger_2, fear_1, fear_2, tension_1, tension_2 (6)
+    # Q3: bitter_1, bitter_2, sad_1, sad_2 (4)
+    # Q4: peace_1, peace_2, tender_1, tender_2, transcendence_1, transcendence_2 (6)
+    dict_quad_agree['q1_a_pos_v_pos'].append(np.mean(dict_emo_agree['joy']))
+    dict_quad_agree['q1_a_pos_v_pos'].append(np.mean(dict_emo_agree['power']))
+    dict_quad_agree['q1_a_pos_v_pos'].append(np.mean(dict_emo_agree['surprise']))
+
+    dict_quad_agree['q2_a_pos_v_neg'].append(np.mean(dict_emo_agree['anger']))
+    dict_quad_agree['q2_a_pos_v_neg'].append(np.mean(dict_emo_agree['fear']))
+    dict_quad_agree['q2_a_pos_v_neg'].append(np.mean(dict_emo_agree['tension']))
+
+    dict_quad_agree['q3_a_neg_v_neg'].append(np.mean(dict_emo_agree['bitter']))
+    dict_quad_agree['q3_a_neg_v_neg'].append(np.mean(dict_emo_agree['sad']))
     
+    dict_quad_agree['q4_a_neg_v_pos'].append(np.mean(dict_emo_agree['peace']))
+    dict_quad_agree['q4_a_neg_v_pos'].append(np.mean(dict_emo_agree['tender']))
+    dict_quad_agree['q4_a_neg_v_pos'].append(np.mean(dict_emo_agree['transcendence']))
+    for key in sorted(dict_quad_agree.keys()):
+        print(key, np.mean(dict_quad_agree[key]))
+
 
 
 if __name__ == "__main__":
