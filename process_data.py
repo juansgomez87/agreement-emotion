@@ -9,7 +9,7 @@ import os
 import pdb
 
 
-def main(data, lang, comp_flag, num_surv, code_cnt, code_lng):
+def main(data, comp_flag, code_lng, num_surv=None):
     """
 
     """
@@ -17,6 +17,10 @@ def main(data, lang, comp_flag, num_surv, code_cnt, code_lng):
     #              'sad', 'surprise', 'tender', 'tension', 'transc',
     #              'taste', 'familiar', 'lyr_und',  'q1_a_pos_v_pos',
     #              'q2_a_pos_v_neg', 'q3_a_neg_v_neg', 'q4_a_neg_v_pos']
+    # agree_res = pd.DataFrame(np.zeros((len(variables), len(variables))),
+    #                          columns=variables,
+    #                          index=variables)
+
     emotions = ['anger', 'bitter', 'fear', 'joy', 'peace',  'power',
                 'sad', 'surprise', 'tender', 'tension', 'transcendence']
     quads = ['q1_a_pos_v_pos', 'q2_a_pos_v_neg',
@@ -28,42 +32,19 @@ def main(data, lang, comp_flag, num_surv, code_cnt, code_lng):
     dict_emo_agree = {k: [] for k in emotions}
     dict_quad_agree = {k: [] for k in quads}
 
-    # agree_res = pd.DataFrame(np.zeros((len(variables), len(variables))),
-    #                          columns=variables,
-    #                          index=variables)
     # remove additional empty spaces from csv load wrt length of header
     num_params = len(data[0])
     data_sliced = [_[:num_params] for _ in data]
-    
-    idx = pd.MultiIndex.from_tuples(list(zip(code_lng, code_cnt)))
-    pdb.set_trace()
+    idx = pd.MultiIndex.from_arrays([code_lng])
     data = pd.DataFrame(data_sliced[1:], index=idx, columns=data_sliced[0])
-    pdb.set_trace()
 
-    # clean data
-    if comp_flag:
-        data = data.replace('', np.nan)
-    else:
+    # clean data from missing data
+    if not comp_flag:
         data = data.dropna()
-
-    # # select a determined number of samples randomly
-    # if num_surv is not None:
-    #     if lang != 'all':
-
-    #         data = data.sample(n=num_surv)
-    #     elif lang == 'all':
-    #         for idx, row in enumerate(surv_cnt):
-    #             if idx < len(surv_cnt) - 1:
-    #                 new_data.stack(data.iloc[row:surv_cnt[idx+1]].sample(n=num_surv))
-    #             else:
-    #                 new_data.stack(data.iloc[surv_cnt[-1]:].sample(n=num_surv))
-    #         pdb.set_trace()
-    #         # clean data
-    #         if comp_flag:
-    #             data = data.replace('', np.nan)
-    #         else:
-    #             data = data.dropna()
-                
+    # clean data if sample with num_samples
+    if num_surv is not None:
+        data = pd.concat([x.sample(n=num_surv) for x in [data.loc[_] for _ in np.unique(code_lng)]])
+    pdb.set_trace()
 
 
     # evaluate krippendorf alpha per song
@@ -158,11 +139,10 @@ if __name__ == "__main__":
         lang = ['english', 'spanish', 'mandarin', 'german']
 
     data = []
-    code_cnt = []
     code_lng = []
     for num_file, file in enumerate(file_name):
         lang_name = file.split('_')[-1].replace('.csv', '')
-        print(lang_name)
+        # print(lang_name)
         with open(file, 'r') as f:
             reader = csv.reader(f, delimiter=',')
             for num_row, row in enumerate(reader):
@@ -175,11 +155,14 @@ if __name__ == "__main__":
                             row[idx] = int(elem)
                     except ValueError:
                         row[idx] = elem
-                if num_row == 0 and num_file > 0:
-                    pass
-                else:
+                if num_row == 0 and num_file == 0:
+                    # add first row with indices
                     data.append(row)
-                    code_cnt.append(num_file)
+                elif num_row == 0 and num_file > 0:
+                    # ignore first row of consecutive files
+                    pass
+                elif num_row > 0:
                     code_lng.append(lang_name)
+                    data.append(row)
 
-    main(data, lang, comp_flag, int(args.number), code_cnt, code_lng)
+    main(data, comp_flag, code_lng, int(args.number))
