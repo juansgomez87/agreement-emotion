@@ -37,22 +37,20 @@ def main(data, comp_flag, code_lng, num_surv=None):
     data_sliced = [_[:num_params] for _ in data]
     idx = pd.MultiIndex.from_arrays([code_lng])
     data = pd.DataFrame(data_sliced[1:], index=idx, columns=data_sliced[0])
-
+    langs = np.unique(code_lng).tolist()
     # clean data from missing data
     if not comp_flag:
         data = data.dropna()
     # clean data if sample with num_samples
     if num_surv is not None:
-        data = pd.concat([x.sample(n=num_surv) for x in [data.loc[_] for _ in np.unique(code_lng)]])
-    pdb.set_trace()
-
+        data = pd.concat([x.sample(n=num_surv) for x in [data.loc[_] for _ in langs]])
 
     # evaluate krippendorf alpha per song
     for song in list_songs:
         start = song + ':1'
         end = song + ':11'
         dict_songs_agree[song] = krippendorf.alpha(reliability_data=data.loc[:, start: end],
-                                                   value_domain=[1, 2, 3, 4, 5, 6, 7],
+                                                   #value_domain=[1, 2, 3, 4, 5, 6, 7],
                                                    level_of_measurement='ordinal')
 
     # mean over emotions
