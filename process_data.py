@@ -8,19 +8,15 @@ import os
 
 import pdb
 
-# usage python3 process_data.py -l [e/s/m/g] -c [y/n]
 
-
-
-
-def main(data, lang, comp_flag):
+def main(data, lang, comp_flag, num_surv, code_cnt, code_lng):
     """
 
     """
-    variables = ['anger', 'bitter', 'fear', 'joy', 'peace',  'power',
-                 'sad', 'surprise', 'tender', 'tension', 'transc',
-                 'taste', 'familiar', 'lyr_und',  'q1_a_pos_v_pos',
-                 'q2_a_pos_v_neg', 'q3_a_neg_v_neg', 'q4_a_neg_v_pos']
+    # variables = ['anger', 'bitter', 'fear', 'joy', 'peace',  'power',
+    #              'sad', 'surprise', 'tender', 'tension', 'transc',
+    #              'taste', 'familiar', 'lyr_und',  'q1_a_pos_v_pos',
+    #              'q2_a_pos_v_neg', 'q3_a_neg_v_neg', 'q4_a_neg_v_pos']
     emotions = ['anger', 'bitter', 'fear', 'joy', 'peace',  'power',
                 'sad', 'surprise', 'tender', 'tension', 'transcendence']
     quads = ['q1_a_pos_v_pos', 'q2_a_pos_v_neg',
@@ -38,14 +34,38 @@ def main(data, lang, comp_flag):
     # remove additional empty spaces from csv load wrt length of header
     num_params = len(data[0])
     data_sliced = [_[:num_params] for _ in data]
-    data = pd.DataFrame(data_sliced[1:], columns=data_sliced[0])
-    # drop duplicates in case created by csv loader
-    data = data.drop_duplicates()
+    
+    idx = pd.MultiIndex.from_tuples(list(zip(code_lng, code_cnt)))
+    pdb.set_trace()
+    data = pd.DataFrame(data_sliced[1:], index=idx, columns=data_sliced[0])
+    pdb.set_trace()
+
     # clean data
     if comp_flag:
         data = data.replace('', np.nan)
     else:
         data = data.dropna()
+
+    # # select a determined number of samples randomly
+    # if num_surv is not None:
+    #     if lang != 'all':
+
+    #         data = data.sample(n=num_surv)
+    #     elif lang == 'all':
+    #         for idx, row in enumerate(surv_cnt):
+    #             if idx < len(surv_cnt) - 1:
+    #                 new_data.stack(data.iloc[row:surv_cnt[idx+1]].sample(n=num_surv))
+    #             else:
+    #                 new_data.stack(data.iloc[surv_cnt[-1]:].sample(n=num_surv))
+    #         pdb.set_trace()
+    #         # clean data
+    #         if comp_flag:
+    #             data = data.replace('', np.nan)
+    #         else:
+    #             data = data.dropna()
+                
+
+
     # evaluate krippendorf alpha per song
     for song in list_songs:
         start = song + ':1'
@@ -78,7 +98,7 @@ def main(data, lang, comp_flag):
 
     dict_quad_agree['q3_a_neg_v_neg'].append(np.mean(dict_emo_agree['bitter']))
     dict_quad_agree['q3_a_neg_v_neg'].append(np.mean(dict_emo_agree['sad']))
-    
+
     dict_quad_agree['q4_a_neg_v_pos'].append(np.mean(dict_emo_agree['peace']))
     dict_quad_agree['q4_a_neg_v_pos'].append(np.mean(dict_emo_agree['tender']))
     dict_quad_agree['q4_a_neg_v_pos'].append(np.mean(dict_emo_agree['transcendence']))
@@ -88,6 +108,7 @@ def main(data, lang, comp_flag):
 
 
 if __name__ == "__main__":
+    # usage python3 process_data.py -l [e/s/m/g] -c [y/n] -n [integer]
     parser = argparse.ArgumentParser()
     parser.add_argument('-l',
                         '--language',
@@ -99,12 +120,19 @@ if __name__ == "__main__":
                         help='Complete data analysis or use missing ratings',
                         action='store',
                         dest='complete')
+    parser.add_argument('-n',
+                        '--number',
+                        help='Number of surveys to process',
+                        action='store',
+                        dest='number')
     args = parser.parse_args()
 
     if args.language is None:
         print('Please select data to process!')
     if args.complete is None:
         print('Please state if you want to process all collected data or not!')
+    if args.number is None:
+        print('Please select number of surveys to process!')
     # complete data processing
     if args.complete == 'y':
         comp_flag = True
@@ -112,25 +140,29 @@ if __name__ == "__main__":
         comp_flag = False
     if args.language == 'e' or args.language == 'english':
         file_name = ['./results/data_english.csv']
-        lang = 'english'
+        lang = ['english']
     elif args.language == 's' or args.language == 'spanish':
         file_name = ['./results/data_spanish.csv']
-        lang = 'spanish'
+        lang = ['spanish']
     elif args.language == 'm' or args.language == 'mandarin':
         file_name = ['./results/data_mandarin.csv']
-        lang = '中文'
+        lang = ['mandarin']
     elif args.language == 'g' or args.language == 'german':
         file_name = ['./results/data_german.csv']
-        lang = 'deutsch'
+        lang = ['deutsch']
     elif args.language == 'a' or args.language == 'all':
         file_name = ['./results/data_english.csv',
                      './results/data_spanish.csv',
                      './results/data_mandarin.csv',
                      './results/data_german.csv']
-        lang = 'all'
+        lang = ['english', 'spanish', 'mandarin', 'german']
 
     data = []
-    for file in file_name:
+    code_cnt = []
+    code_lng = []
+    for num_file, file in enumerate(file_name):
+        lang_name = file.split('_')[-1].replace('.csv', '')
+        print(lang_name)
         with open(file, 'r') as f:
             reader = csv.reader(f, delimiter=',')
             for num_row, row in enumerate(reader):
@@ -143,5 +175,11 @@ if __name__ == "__main__":
                             row[idx] = int(elem)
                     except ValueError:
                         row[idx] = elem
-                data.append(row)
-    main(data, lang, comp_flag)
+                if num_row == 0 and num_file > 0:
+                    pass
+                else:
+                    data.append(row)
+                    code_cnt.append(num_file)
+                    code_lng.append(lang_name)
+
+    main(data, lang, comp_flag, int(args.number), code_cnt, code_lng)
