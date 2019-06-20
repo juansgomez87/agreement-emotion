@@ -9,15 +9,37 @@ import os
 import pdb
 
 
+def print_gold_msi_data(data):
+    print('GOLD-MSI scores:')
+    print('F1 - Active engagement: range 9-63 > population mean 41.52')
+    print('Sample score (mean - {:.2f}, std - {:.2f})'.format(np.nanmean(data['act_eng:1']), np.nanstd(data['act_eng:1'])))
+    print('F2 - Perceptual abilities: range 9-63 > population mean 50.20')
+    print('Sample score (mean - {:.2f}, std - {:.2f})'.format(np.nanmean(data['perc_abi:1']), np.nanstd(data['perc_abi:1'])))
+    print('F3 - Musical training: range 7-49 > population mean 26.52')
+    print('Sample score (mean - {:.2f}, std - {:.2f})'.format(np.nanmean(data['mus_trai:1']), np.nanstd(data['mus_trai:1'])))
+    print('F4 - Emotions: range 6-42 > population mean 34.66')
+    print('Sample score (mean - {:.2f}, std - {:.2f})'.format(np.nanmean(data['emo:1']), np.nanstd(data['emo:1'])))
+    print('F5 - Singing abilities: range 7-49 > population mean 31.67')
+    print('Sample score (mean - {:.2f}, std - {:.2f})'.format(np.nanmean(data['sing_abi:1']), np.nanstd(data['sing_abi:1'])))
+    print('F6 - General sophistication: range 18-126 > population mean 81.58')
+    print('Sample score (mean - {:.2f}, std - {:.2f})'.format(np.nanmean(data['mus_soph:1']), np.nanstd(data['mus_soph:1'])))
+
+
+
 def main(data, comp_flag, code_lng, num_surv):
     """
 
     """
     # configuration flags
     pretty_print = False
+    print_gold_msi = False
+    # selector of subsets: 0 - select all, 1 - select positive, 2 - select negative
+    # e.g. 1 - select surveys that understand lyrics, 2 - select surveys that don't understand lyrics
+    sel_understood_songs = 1
 
     emo_enc = {1: 'anger', 2: 'bitter', 3: 'fear', 4: 'joy', 5: 'peace',  6: 'power',
                7: 'sad', 8: 'surprise', 8: 'tender', 10: 'tension', 11: 'transcendence'}
+    sel_enc = {11: 'preference', 12: 'familiarity', 13: 'understanding'}
     # TODO: how to implement quadrant mapping agreement???
     quads = ['q1_a_pos_v_pos', 'q2_a_pos_v_neg',
              'q3_a_neg_v_neg', 'q4_a_neg_v_pos']
@@ -46,35 +68,39 @@ def main(data, comp_flag, code_lng, num_surv):
     # sample data
     if num_surv != 0:
         data = pd.concat([x.sample(n=num_surv) for x in [data.loc[_] for _ in langs]])
-    # pdb.set_trace()
+    # sample by preference
+
+    # sample by familiarity
+
+    # sample by understood_songs
+    txt_understood ='understood and not understood lyrics'
+    if sel_understood_songs == 1:
+        txt_understood ='understood lyrics'
+        for key in emo_enc.keys():
+            idx = ['{}:{}'.format(_, key) for _ in list_songs]
+            sel_idx = ['{}:14'.format(_) for _ in list_songs]
+            pdb.set_trace()
+    elif sel_understood_songs == 2:
+        txt_understood ='not understood lyrics'
+        
+
     print('**********************')
     print('{} surveys processed in {} {}'.format(data.shape[0], langs, txt_flag))
+    print('Subsets: {}'.format(txt_understood))
 
     # mean and std across raters
     mean_raters = data.mean()
     std_raters = data.std()
-    # pdb.set_trace()
+
     # print demographics
-    print('AGE: mean - {}, std - {}'.format(mean_raters['demographics1:3'], std_raters['demographics1:3']))
+    print('AGE: mean - {:.2f}, std - {:.2f}'.format(mean_raters['demographics1:3'], std_raters['demographics1:3']))
     gender = [_ for _ in data['demographics2:1'].value_counts()]
     if len(gender) == 2:
         print('GENDER: men - {}, women - {}'.format(gender[0], gender[1]))
     else:
         print('GENDER: men - {}, women - {}, other - {}'.format(gender[0], gender[1], gender[2]))
-    print('GOLD-MSI scores:')
-    print('F1 - Active engagement: range 9-63 > population mean 41.52')
-    print('Sample score (mean - {}, std - {}'.format(np.nanmean(data['act_eng:1']), np.nanstd(data['act_eng:1'])))
-    print('F2 - Perceptual abilities: range 9-63 > population mean 50.20')
-    print('Sample score (mean - {}, std - {}'.format(np.nanmean(data['perc_abi:1']), np.nanstd(data['perc_abi:1'])))
-    print('F3 - Musical training: range 7-49 > population mean 26.52')
-    print('Sample score (mean - {}, std - {}'.format(np.nanmean(data['mus_trai:1']), np.nanstd(data['mus_trai:1'])))
-    print('F4 - Emotions: range 6-42 > population mean 34.66')
-    print('Sample score (mean - {}, std - {}'.format(np.nanmean(data['emo:1']), np.nanstd(data['emo:1'])))
-    print('F5 - Singing abilities: range 7-49 > population mean 31.67')
-    print('Sample score (mean - {}, std - {}'.format(np.nanmean(data['sing_abi:1']), np.nanstd(data['sing_abi:1'])))
-    print('F6 - General sophistication: range 18-126 > population mean 81.58')
-    print('Sample score (mean - {}, std - {}'.format(np.nanmean(data['mus_soph:1']), np.nanstd(data['mus_soph:1'])))
-
+    if print_gold_msi:
+        print_gold_msi_data(data)
     print('**********************')
     # calculate agreement across every rating of emotion [emotion rated for all songs]
     for key in emo_enc.keys():
@@ -86,21 +112,21 @@ def main(data, comp_flag, code_lng, num_surv):
         dict_emo_agree[emo_enc[key]] = krippendorf.alpha(reliability_data=data[idx],
                                                          level_of_measurement='ordinal')
 
-    if not pretty_print:
-        print('Mean:')
-        for key in sorted(dict_emo_mean.keys()):
-            print(key, dict_emo_mean[key])     
-        print('Standard dev.:')
-        for key in sorted(dict_emo_std.keys()):
-            print(key, dict_emo_std[key])     
-        print('Agreement:')
-        for key in sorted(dict_emo_agree.keys()):
-            print(key, dict_emo_agree[key])
+    # if not pretty_print:
+    #     print('Mean:')
+    #     for key in sorted(dict_emo_mean.keys()):
+    #         print(key, dict_emo_mean[key])     
+    #     print('Standard dev.:')
+    #     for key in sorted(dict_emo_std.keys()):
+    #         print(key, dict_emo_std[key])     
+    #     print('Agreement:')
+    #     for key in sorted(dict_emo_agree.keys()):
+    #         print(key, dict_emo_agree[key])
 
     else:
         # TODO!
         pass
-    pdb.set_trace()
+    # pdb.set_trace()
 
 
 
