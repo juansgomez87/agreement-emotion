@@ -9,27 +9,26 @@ import os
 import pdb
 
 
-def main(data, comp_flag, code_lng, num_surv=None):
+def main(data, comp_flag, code_lng, num_surv):
     """
 
     """
-    # variables = ['anger', 'bitter', 'fear', 'joy', 'peace',  'power',
-    #              'sad', 'surprise', 'tender', 'tension', 'transc',
-    #              'taste', 'familiar', 'lyr_und',  'q1_a_pos_v_pos',
-    #              'q2_a_pos_v_neg', 'q3_a_neg_v_neg', 'q4_a_neg_v_pos']
-    # agree_res = pd.DataFrame(np.zeros((len(variables), len(variables))),
-    #                          columns=variables,
-    #                          index=variables)
+    # configuration flags
+    pretty_print = False
 
-    emotions = ['anger', 'bitter', 'fear', 'joy', 'peace',  'power',
-                'sad', 'surprise', 'tender', 'tension', 'transcendence']
+    emo_enc = {1: 'anger', 2: 'bitter', 3: 'fear', 4: 'joy', 5: 'peace',  6: 'power',
+               7: 'sad', 8: 'surprise', 8: 'tender', 10: 'tension', 11: 'transcendence'}
+    # TODO: how to implement quadrant mapping agreement???
     quads = ['q1_a_pos_v_pos', 'q2_a_pos_v_neg',
              'q3_a_neg_v_neg', 'q4_a_neg_v_pos']
     # get list of songs
     dirs = os.listdir('./data_normalized')
     list_songs = [_.replace('.mp3', '') for _ in dirs]
-    dict_songs_agree = {}.fromkeys(list_songs)
-    dict_emo_agree = {k: [] for k in emotions}
+    # results dictionaries
+    dict_emo_mean = {k: [] for k in emo_enc.values()}
+    dict_emo_std = {k: [] for k in emo_enc.values()}
+    dict_emo_agree = {k: [] for k in emo_enc.values()}
+
     dict_quad_agree = {k: [] for k in quads}
 
     # remove additional empty spaces from csv load wrt length of header
@@ -38,51 +37,72 @@ def main(data, comp_flag, code_lng, num_surv=None):
     idx = pd.MultiIndex.from_arrays([code_lng])
     data = pd.DataFrame(data_sliced[1:], index=idx, columns=data_sliced[0])
     langs = np.unique(code_lng).tolist()
+
     # clean data from missing data
+    txt_flag = 'with NaN data'
     if not comp_flag:
         data = data.dropna()
-    # clean data if sample with num_samples
-    if num_surv is not None:
+        txt_flag = 'without NaN data'
+    # sample data
+    if num_surv != 0:
         data = pd.concat([x.sample(n=num_surv) for x in [data.loc[_] for _ in langs]])
+    # pdb.set_trace()
+    print('**********************')
+    print('{} surveys processed in {} {}'.format(data.shape[0], langs, txt_flag))
 
-    # evaluate krippendorf alpha per song
-    for song in list_songs:
-        start = song + ':1'
-        end = song + ':11'
-        dict_songs_agree[song] = krippendorf.alpha(reliability_data=data.loc[:, start: end],
-                                                   #value_domain=[1, 2, 3, 4, 5, 6, 7],
-                                                   level_of_measurement='ordinal')
+    # mean and std across raters
+    mean_raters = data.mean()
+    std_raters = data.std()
+    pdb.set_trace()
+    # print demographics
+    print('AGE: mean - {}, std - {}'.format(mean_raters['demographics1:3'], std_raters['demographics1:3']))
+    gender = [_ for _ in data['demographics2:1'].value_counts()]
+    if len(gender) == 2:
+        print('GENDER: men - {}, women - {}'.format(gender[0], gender[1]))
+    else:
+        print('GENDER: men - {}, women - {}, other - {}'.format(gender[0], gender[1], gender[2]))
+    print('GOLD-MSI scores:')
+    print('F1 - Active engagement: range 9-63 > population mean 41.52')
+    print('Sample score (mean - {}, std - {}'.format(mean_raters['act_eng:1'], std_raters['act_eng:1']))
+    print('F2 - Perceptual abilities: range 9-63 > population mean 50.20')
+    print('Sample score (mean - {}, std - {}'.format(mean_raters['perc_abi:1'], std_raters['perc_abi:1']))
+    print('F3 - Musical training: range 7-49 > population mean 26.52')
+    print('Sample score (mean - {}, std - {}'.format(mean_raters['mus_trai:1'], std_raters['mus_trai:1']))
+    print('F4 - Emotions: range 6-42 > population mean 34.66')
+    print('Sample score (mean - {}, std - {}'.format(mean_raters['emo:1'], std_raters['emo:1']))
+    print('F5 - Singing abilities: range 7-49 > population mean 31.67')
+    print('Sample score (mean - {}, std - {}'.format(mean_raters['sing_abi:1'], std_raters['sing_abi:1']))
+    print('F6 - General sophistication: range 18-126 > population mean 81.58')
+    print('Sample score (mean - {}, std - {}'.format(mean_raters['mus_soph:1'], std_raters['mus_soph:1']))
 
-    # mean over emotions
-    for emo in emotions:
-        for key in sorted(dict_songs_agree.keys()):
-            if key.startswith(emo):
-                dict_emo_agree[emo].append(dict_songs_agree[key])
-    for key in sorted(dict_emo_agree.keys()):
-        print(key, np.mean(dict_emo_agree[key]))
+    print('**********************')
+    # calculate agreement across every rating of emotion [emotion rated for all songs]
+    for key in emo_enc.keys():
+        idx = ['{}:{}'.format(_, key) for _ in list_songs]
+        # mean across all emotions
+        dict_emo_mean[emo_enc[key]] = np.mean(mean_raters[idx])
+        dict_emo_std[emo_enc[key]] = np.mean(std_raters[idx])
+        # agreement alpha
+        dict_emo_agree[emo_enc[key]] = krippendorf.alpha(reliability_data=data[idx],
+                                                         level_of_measurement='ordinal')
 
-    # mean over quadrants
+    if not pretty_print:
+        print('Mean:')
+        for key in sorted(dict_emo_mean.keys()):
+            print(key, dict_emo_mean[key])     
+        print('Standard dev.:')
+        for key in sorted(dict_emo_std.keys()):
+            print(key, dict_emo_std[key])     
+        print('Agreement:')
+        for key in sorted(dict_emo_agree.keys()):
+            print(key, dict_emo_agree[key])
 
-    # Q1: joy_1, joy_2, power_1, power_2, surprise_1, surprise_2 (6)
-    # Q2: anger_1, anger_2, fear_1, fear_2, tension_1, tension_2 (6)
-    # Q3: bitter_1, bitter_2, sad_1, sad_2 (4)
-    # Q4: peace_1, peace_2, tender_1, tender_2, transcendence_1, transcendence_2 (6)
-    dict_quad_agree['q1_a_pos_v_pos'].append(np.mean(dict_emo_agree['joy']))
-    dict_quad_agree['q1_a_pos_v_pos'].append(np.mean(dict_emo_agree['power']))
-    dict_quad_agree['q1_a_pos_v_pos'].append(np.mean(dict_emo_agree['surprise']))
+    else:
+        # TODO!
+        pass
+    pdb.set_trace()
 
-    dict_quad_agree['q2_a_pos_v_neg'].append(np.mean(dict_emo_agree['anger']))
-    dict_quad_agree['q2_a_pos_v_neg'].append(np.mean(dict_emo_agree['fear']))
-    dict_quad_agree['q2_a_pos_v_neg'].append(np.mean(dict_emo_agree['tension']))
 
-    dict_quad_agree['q3_a_neg_v_neg'].append(np.mean(dict_emo_agree['bitter']))
-    dict_quad_agree['q3_a_neg_v_neg'].append(np.mean(dict_emo_agree['sad']))
-
-    dict_quad_agree['q4_a_neg_v_pos'].append(np.mean(dict_emo_agree['peace']))
-    dict_quad_agree['q4_a_neg_v_pos'].append(np.mean(dict_emo_agree['tender']))
-    dict_quad_agree['q4_a_neg_v_pos'].append(np.mean(dict_emo_agree['transcendence']))
-    for key in sorted(dict_quad_agree.keys()):
-        print(key, np.mean(dict_quad_agree[key]))
 
 
 
@@ -96,22 +116,22 @@ if __name__ == "__main__":
                         dest='language')
     parser.add_argument('-c',
                         '--complete',
-                        help='Complete data analysis or use missing ratings',
+                        help='Complete ratings [y] or use missing/NaN ratings [n]',
                         action='store',
                         dest='complete')
     parser.add_argument('-n',
                         '--number',
-                        help='Number of surveys to process',
+                        help='Number of surveys to process with random sampling',
                         action='store',
-                        dest='number')
+                        dest='number',
+                        default=False)
     args = parser.parse_args()
 
     if args.language is None:
         print('Please select data to process!')
     if args.complete is None:
         print('Please state if you want to process all collected data or not!')
-    if args.number is None:
-        print('Please select number of surveys to process!')
+
     # complete data processing
     if args.complete == 'y':
         comp_flag = True
@@ -140,7 +160,6 @@ if __name__ == "__main__":
     code_lng = []
     for num_file, file in enumerate(file_name):
         lang_name = file.split('_')[-1].replace('.csv', '')
-        # print(lang_name)
         with open(file, 'r') as f:
             reader = csv.reader(f, delimiter=',')
             for num_row, row in enumerate(reader):
@@ -162,5 +181,4 @@ if __name__ == "__main__":
                 elif num_row > 0:
                     code_lng.append(lang_name)
                     data.append(row)
-
     main(data, comp_flag, code_lng, int(args.number))
