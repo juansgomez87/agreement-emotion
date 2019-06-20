@@ -53,7 +53,7 @@ def main(data, comp_flag, code_lng, num_surv):
     # mean and std across raters
     mean_raters = data.mean()
     std_raters = data.std()
-    pdb.set_trace()
+    # pdb.set_trace()
     # print demographics
     print('AGE: mean - {}, std - {}'.format(mean_raters['demographics1:3'], std_raters['demographics1:3']))
     gender = [_ for _ in data['demographics2:1'].value_counts()]
@@ -63,17 +63,17 @@ def main(data, comp_flag, code_lng, num_surv):
         print('GENDER: men - {}, women - {}, other - {}'.format(gender[0], gender[1], gender[2]))
     print('GOLD-MSI scores:')
     print('F1 - Active engagement: range 9-63 > population mean 41.52')
-    print('Sample score (mean - {}, std - {}'.format(mean_raters['act_eng:1'], std_raters['act_eng:1']))
+    print('Sample score (mean - {}, std - {}'.format(np.nanmean(data['act_eng:1']), np.nanstd(data['act_eng:1'])))
     print('F2 - Perceptual abilities: range 9-63 > population mean 50.20')
-    print('Sample score (mean - {}, std - {}'.format(mean_raters['perc_abi:1'], std_raters['perc_abi:1']))
+    print('Sample score (mean - {}, std - {}'.format(np.nanmean(data['perc_abi:1']), np.nanstd(data['perc_abi:1'])))
     print('F3 - Musical training: range 7-49 > population mean 26.52')
-    print('Sample score (mean - {}, std - {}'.format(mean_raters['mus_trai:1'], std_raters['mus_trai:1']))
+    print('Sample score (mean - {}, std - {}'.format(np.nanmean(data['mus_trai:1']), np.nanstd(data['mus_trai:1'])))
     print('F4 - Emotions: range 6-42 > population mean 34.66')
-    print('Sample score (mean - {}, std - {}'.format(mean_raters['emo:1'], std_raters['emo:1']))
+    print('Sample score (mean - {}, std - {}'.format(np.nanmean(data['emo:1']), np.nanstd(data['emo:1'])))
     print('F5 - Singing abilities: range 7-49 > population mean 31.67')
-    print('Sample score (mean - {}, std - {}'.format(mean_raters['sing_abi:1'], std_raters['sing_abi:1']))
+    print('Sample score (mean - {}, std - {}'.format(np.nanmean(data['sing_abi:1']), np.nanstd(data['sing_abi:1'])))
     print('F6 - General sophistication: range 18-126 > population mean 81.58')
-    print('Sample score (mean - {}, std - {}'.format(mean_raters['mus_soph:1'], std_raters['mus_soph:1']))
+    print('Sample score (mean - {}, std - {}'.format(np.nanmean(data['mus_soph:1']), np.nanstd(data['mus_soph:1'])))
 
     print('**********************')
     # calculate agreement across every rating of emotion [emotion rated for all songs]
@@ -169,7 +169,7 @@ if __name__ == "__main__":
                         if elem == '':
                             row[idx] = np.nan
                         else:
-                            row[idx] = int(elem)
+                            row[idx] = float(elem)
                     except ValueError:
                         row[idx] = elem
                 if num_row == 0 and num_file == 0:
