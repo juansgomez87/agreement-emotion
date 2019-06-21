@@ -10,6 +10,8 @@ import pdb
 
 
 def print_gold_msi_data(data):
+    """
+    """
     print('GOLD-MSI scores:')
     print('F1 - Active engagement: range 9-63 > population mean 41.52')
     print('Sample score (mean - {:.2f}, std - {:.2f})'.format(np.nanmean(data['act_eng:1']), np.nanstd(data['act_eng:1'])))
@@ -24,7 +26,26 @@ def print_gold_msi_data(data):
     print('F6 - General sophistication: range 18-126 > population mean 81.58')
     print('Sample score (mean - {:.2f}, std - {:.2f})'.format(np.nanmean(data['mus_soph:1']), np.nanstd(data['mus_soph:1'])))
 
-
+def remove_samples_by_threshold(data, emo_enc, sel_enc, list_songs, idx_smp, sel):
+    """
+    """
+    if sel == 0:
+        txt_to_print = '{} (all - positive (>3) and negative(<3))\n'.format(sel_enc[idx_smp])
+    elif sel == 1:
+        txt_to_print = '{} (positive (>3))\n'.format(sel_enc[idx_smp])
+        for key in emo_enc.keys():
+            idx = ['{}:{}'.format(_, key) for _ in list_songs]
+            sel_idx = ['{}:{}'.format(_, str(idx_smp)) for _ in list_songs]
+            for idx_rat, idx_sel in zip(idx, sel_idx):
+                data[idx_rat].iloc[np.where(data[idx_sel] < 3)[0]] = np.nan
+    elif sel == 2:
+        txt_to_print = '{} (negative (<3))\n'.format(sel_enc[idx_smp])
+        for key in emo_enc.keys():
+            idx = ['{}:{}'.format(_, key) for _ in list_songs]
+            sel_idx = ['{}:{}'.format(_, str(idx_smp)) for _ in list_songs]
+            for idx_rat, idx_sel in zip(idx, sel_idx):
+                data[idx_rat].iloc[np.where(data[idx_sel] > 3)[0]] = np.nan
+    return data, txt_to_print
 
 def main(data, comp_flag, code_lng, num_surv):
     """
@@ -35,11 +56,13 @@ def main(data, comp_flag, code_lng, num_surv):
     print_gold_msi = False
     # selector of subsets: 0 - select all, 1 - select positive, 2 - select negative
     # e.g. 1 - select surveys that understand lyrics, 2 - select surveys that don't understand lyrics
-    sel_understood_songs = 1
+    sel_preferred_songs = 0
+    sel_familiar_songs = 0
+    sel_understood_songs = 0
 
     emo_enc = {1: 'anger', 2: 'bitter', 3: 'fear', 4: 'joy', 5: 'peace',  6: 'power',
                7: 'sad', 8: 'surprise', 8: 'tender', 10: 'tension', 11: 'transcendence'}
-    sel_enc = {11: 'preference', 12: 'familiarity', 13: 'understanding'}
+    sel_enc = {12: 'preference', 13: 'familiarity', 14: 'understanding'}
     # TODO: how to implement quadrant mapping agreement???
     quads = ['q1_a_pos_v_pos', 'q2_a_pos_v_neg',
              'q3_a_neg_v_neg', 'q4_a_neg_v_pos']
@@ -59,6 +82,9 @@ def main(data, comp_flag, code_lng, num_surv):
     idx = pd.MultiIndex.from_arrays([code_lng])
     data = pd.DataFrame(data_sliced[1:], index=idx, columns=data_sliced[0])
     langs = np.unique(code_lng).tolist()
+    pdb.set_trace()
+    # TODO: remove neutral ratings as missing data
+    # data[np.where(data['anger_1:1':'anger_1:11']==3.)[1]]=np.nan
 
     # clean data from missing data
     txt_flag = 'with NaN data'
@@ -68,30 +94,23 @@ def main(data, comp_flag, code_lng, num_surv):
     # sample data
     if num_surv != 0:
         data = pd.concat([x.sample(n=num_surv) for x in [data.loc[_] for _ in langs]])
+
     # sample by preference
+    idx_smp = 12
 
+    data, txt_pref = remove_samples_by_threshold(data, emo_enc, sel_enc, list_songs, idx_smp, sel_preferred_songs)
     # sample by familiarity
-
+    idx_smp = 13
+    data, txt_fam = remove_samples_by_threshold(data, emo_enc, sel_enc, list_songs, idx_smp, sel_familiar_songs)
     # sample by understood_songs
-    txt_understood ='understood and not understood lyrics'
-    if sel_understood_songs == 1:
-        txt_understood ='understood lyrics'
-        for key in emo_enc.keys():
-            idx = ['{}:{}'.format(_, key) for _ in list_songs]
-            sel_idx = ['{}:14'.format(_) for _ in list_songs]  
-            for idx_rat, idx_sel in zip(idx, sel_idx):
-                for i, _ in enumerate(data[idx_rat]):
-                # TODO: less than equal?? What to do with neutral ratings?
-                    if data[idx_sel][i] < 3:
-                        # TODO: fix setting values for multiindex df
-                        data[idx_rat][i] = np.nan
-    elif sel_understood_songs == 2:
-        txt_understood ='not understood lyrics'
-        
+    idx_smp = 14
+    data, txt_und = remove_samples_by_threshold(data, emo_enc, sel_enc, list_songs, idx_smp, sel_understood_songs)
+    txt_to_print = txt_pref + txt_fam + txt_und
+    pdb.set_trace()
 
     print('**********************')
     print('{} surveys processed in {} {}'.format(data.shape[0], langs, txt_flag))
-    print('Subsets: {}'.format(txt_understood))
+    print('Subsets:\n{}'.format(txt_to_print))
 
     # mean and std across raters
     mean_raters = data.mean()
