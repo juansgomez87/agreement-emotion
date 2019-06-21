@@ -47,7 +47,7 @@ def remove_samples_by_threshold(data, emo_enc, sel_enc, list_songs, idx_smp, sel
                 data[idx_rat].iloc[np.where(data[idx_sel] > 3)[0]] = np.nan
     return data, txt_to_print
 
-def main(data, comp_flag, code_lng, num_surv):
+def main(data, comp_flag, rem_flag, code_lng, num_surv):
     """
 
     """
@@ -61,7 +61,7 @@ def main(data, comp_flag, code_lng, num_surv):
     sel_understood_songs = 0
 
     emo_enc = {1: 'anger', 2: 'bitter', 3: 'fear', 4: 'joy', 5: 'peace',  6: 'power',
-               7: 'sad', 8: 'surprise', 8: 'tender', 10: 'tension', 11: 'transcendence'}
+               7: 'sad', 8: 'surprise', 9: 'tender', 10: 'tension', 11: 'transcendence'}
     sel_enc = {12: 'preference', 13: 'familiarity', 14: 'understanding'}
     # TODO: how to implement quadrant mapping agreement???
     quads = ['q1_a_pos_v_pos', 'q2_a_pos_v_neg',
@@ -82,22 +82,21 @@ def main(data, comp_flag, code_lng, num_surv):
     idx = pd.MultiIndex.from_arrays([code_lng])
     data = pd.DataFrame(data_sliced[1:], index=idx, columns=data_sliced[0])
     langs = np.unique(code_lng).tolist()
-    pdb.set_trace()
-    # TODO: remove neutral ratings as missing data
-    # data[np.where(data['anger_1:1':'anger_1:11']==3.)[1]]=np.nan
 
     # clean data from missing data
     txt_flag = 'with NaN data'
-    if not comp_flag:
-        data = data.dropna()
+    if not comp_flag and not rem_flag:
+        data = data.dropna() #thresh=150)
         txt_flag = 'without NaN data'
+    elif not comp_flag and rem_flag:
+        data = data.dropna(thresh=150)
+        txt_flag = 'without NaN data (if more than 50%)'
     # sample data
     if num_surv != 0:
         data = pd.concat([x.sample(n=num_surv) for x in [data.loc[_] for _ in langs]])
-
+    pdb.set_trace()
     # sample by preference
     idx_smp = 12
-
     data, txt_pref = remove_samples_by_threshold(data, emo_enc, sel_enc, list_songs, idx_smp, sel_preferred_songs)
     # sample by familiarity
     idx_smp = 13
@@ -106,7 +105,6 @@ def main(data, comp_flag, code_lng, num_surv):
     idx_smp = 14
     data, txt_und = remove_samples_by_threshold(data, emo_enc, sel_enc, list_songs, idx_smp, sel_understood_songs)
     txt_to_print = txt_pref + txt_fam + txt_und
-    pdb.set_trace()
 
     print('**********************')
     print('{} surveys processed in {} {}'.format(data.shape[0], langs, txt_flag))
@@ -117,6 +115,7 @@ def main(data, comp_flag, code_lng, num_surv):
     std_raters = data.std()
 
     # print demographics
+    # calculate demographics after filters
     print('AGE: mean - {:.2f}, std - {:.2f}'.format(mean_raters['demographics1:3'], std_raters['demographics1:3']))
     gender = [_ for _ in data['demographics2:1'].value_counts()]
     if len(gender) == 2:
@@ -169,6 +168,11 @@ if __name__ == "__main__":
                         help='Complete ratings [y] or use missing/NaN ratings [n]',
                         action='store',
                         dest='complete')
+    parser.add_argument('-r',
+                        '--remove',
+                        help='Keep neutral ratings [y] or not [n]',
+                        action='store',
+                        dest='remove')
     parser.add_argument('-n',
                         '--number',
                         help='Number of surveys to process with random sampling',
@@ -181,35 +185,47 @@ if __name__ == "__main__":
         print('Please select data to process!')
     if args.complete is None:
         print('Please state if you want to process all collected data or not!')
+    if args.remove is None:
+        print('Please state if you want to process all collected data or not!')
 
     # complete data processing
     if args.complete == 'y':
         comp_flag = True
     elif args.complete == 'n':
         comp_flag = False
+
+    # neutral ratings processing
+    if args.remove == 'y':
+        rem_tx = '.no.neu'
+        rem_flag = True
+    elif args.remove == 'n':
+        rem_tx = ''
+        rem_flag = False
+
     if args.language == 'e' or args.language == 'english':
-        file_name = ['./results/data_english.csv']
+        file_name = ['./results/data_english{}.csv'.format(rem_tx)]
         lang = ['english']
     elif args.language == 's' or args.language == 'spanish':
-        file_name = ['./results/data_spanish.csv']
+        file_name = ['./results/data_spanish{}.csv'.format(rem_tx)]
         lang = ['spanish']
     elif args.language == 'm' or args.language == 'mandarin':
-        file_name = ['./results/data_mandarin.csv']
+        file_name = ['./results/data_mandarin{}.csv'.format(rem_tx)]
         lang = ['mandarin']
     elif args.language == 'g' or args.language == 'german':
-        file_name = ['./results/data_german.csv']
+        file_name = ['./results/data_german{}.csv'.format(rem_tx)]
         lang = ['deutsch']
     elif args.language == 'a' or args.language == 'all':
-        file_name = ['./results/data_english.csv',
-                     './results/data_spanish.csv',
-                     './results/data_mandarin.csv',
-                     './results/data_german.csv']
+        file_name = ['./results/data_english{}.csv'.format(rem_tx),
+                     './results/data_spanish{}.csv'.format(rem_tx),
+                     './results/data_mandarin{}.csv'.format(rem_tx),
+                     './results/data_german{}.csv'.format(rem_tx)]
         lang = ['english', 'spanish', 'mandarin', 'german']
+
 
     data = []
     code_lng = []
     for num_file, file in enumerate(file_name):
-        lang_name = file.split('_')[-1].replace('.csv', '')
+        lang_name = file.split('_')[-1].replace('{}.csv'.format(rem_tx), '')
         with open(file, 'r') as f:
             reader = csv.reader(f, delimiter=',')
             for num_row, row in enumerate(reader):
@@ -231,4 +247,4 @@ if __name__ == "__main__":
                 elif num_row > 0:
                     code_lng.append(lang_name)
                     data.append(row)
-    main(data, comp_flag, code_lng, int(args.number))
+    main(data, comp_flag, rem_flag, code_lng, int(args.number))
