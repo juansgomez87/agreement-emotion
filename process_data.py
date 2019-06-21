@@ -78,8 +78,13 @@ def main(data, comp_flag, code_lng, num_surv):
         txt_understood ='understood lyrics'
         for key in emo_enc.keys():
             idx = ['{}:{}'.format(_, key) for _ in list_songs]
-            sel_idx = ['{}:14'.format(_) for _ in list_songs]
-            pdb.set_trace()
+            sel_idx = ['{}:14'.format(_) for _ in list_songs]  
+            for idx_rat, idx_sel in zip(idx, sel_idx):
+                for i, _ in enumerate(data[idx_rat]):
+                # TODO: less than equal?? What to do with neutral ratings?
+                    if data[idx_sel][i] < 3:
+                        # TODO: fix setting values for multiindex df
+                        data[idx_rat][i] = np.nan
     elif sel_understood_songs == 2:
         txt_understood ='not understood lyrics'
         
@@ -112,16 +117,16 @@ def main(data, comp_flag, code_lng, num_surv):
         dict_emo_agree[emo_enc[key]] = krippendorf.alpha(reliability_data=data[idx],
                                                          level_of_measurement='ordinal')
 
-    # if not pretty_print:
-    #     print('Mean:')
-    #     for key in sorted(dict_emo_mean.keys()):
-    #         print(key, dict_emo_mean[key])     
-    #     print('Standard dev.:')
-    #     for key in sorted(dict_emo_std.keys()):
-    #         print(key, dict_emo_std[key])     
-    #     print('Agreement:')
-    #     for key in sorted(dict_emo_agree.keys()):
-    #         print(key, dict_emo_agree[key])
+    if not pretty_print:
+        print('Mean:')
+        for key in sorted(dict_emo_mean.keys()):
+            print(key, dict_emo_mean[key])     
+        print('Standard dev.:')
+        for key in sorted(dict_emo_std.keys()):
+            print(key, dict_emo_std[key])     
+        print('Agreement:')
+        for key in sorted(dict_emo_agree.keys()):
+            print(key, dict_emo_agree[key])
 
     else:
         # TODO!
