@@ -5,6 +5,7 @@ import csv
 import argparse
 import krippendorf
 import os
+import sys
 
 import pdb
 
@@ -25,6 +26,26 @@ def print_gold_msi_data(data):
     print('Sample score (mean - {:.2f}, std - {:.2f})'.format(np.nanmean(data['sing_abi:1']), np.nanstd(data['sing_abi:1'])))
     print('F6 - General sophistication: range 18-126 > population mean 81.58')
     print('Sample score (mean - {:.2f}, std - {:.2f})'.format(np.nanmean(data['mus_soph:1']), np.nanstd(data['mus_soph:1'])))
+
+
+def print_results(mean, std, agree, pretty_print):
+    if not pretty_print:
+        print('Mean:')
+        for key in sorted(mean.keys()):
+            # print(key, dict_emo_mean[key])
+            print('{:.3f}'.format(mean[key]))    
+        print('Standard dev.:')
+        for key in sorted(std.keys()):
+            # print(key, dict_emo_std[key])  
+            print('{:.3f}'.format(std[key]))
+        print('Agreement:')
+        for key in sorted(agree.keys()):
+            # print(key, dict_emo_agree[key])
+            print('{:.3f}'.format(gree[key]))
+    else:
+        # TODO: implement pretty print for latex
+        pass
+
 
 def filter_samples(data, emo_enc, sel_enc, list_songs, idx_smp, sel):
     """
@@ -75,13 +96,13 @@ def select_filter(filter):
     return sel_preferred_songs, sel_familiar_songs, sel_understood_songs
 
 
-def main(data, comp_flag, rem_flag, code_lng, num_surv, filter):
+def main(data, comp_flag, rem_flag, quad_flag, code_lng, num_surv, filter):
     """
 
     """
     # configuration flags
     pretty_print = False
-    print_gold_msi = False
+    print_gold_msi = True
     sel_preferred_songs, sel_familiar_songs, sel_understood_songs = select_filter(filter)
 
     emo_enc = {1: 'anger', 2: 'bitter', 3: 'fear', 4: 'joy', 5: 'peace',  6: 'power',
@@ -95,12 +116,14 @@ def main(data, comp_flag, rem_flag, code_lng, num_surv, filter):
     # get list of songs
     dirs = os.listdir('./data_normalized')
     list_songs = [_.replace('.mp3', '') for _ in dirs]
-    # results dictionaries
+    # results dictionaries for emotions
     dict_emo_mean = {k: [] for k in emo_enc.values()}
     dict_emo_std = {k: [] for k in emo_enc.values()}
     dict_emo_agree = {k: [] for k in emo_enc.values()}
-
-    dict_quad_agree = {k: [] for k in quad_enc}
+    # results dictionaries for quadrants
+    dict_quad_mean = {k: [] for k in quad_enc.keys()}
+    dict_quad_std = {k: [] for k in quad_enc.keys()}
+    dict_quad_agree = {k: [] for k in quad_enc.keys()}
 
     # remove additional empty spaces from csv load wrt length of header
     num_params = len(data[0])
@@ -115,6 +138,7 @@ def main(data, comp_flag, rem_flag, code_lng, num_surv, filter):
         data = data.dropna()
         txt_flag = 'without NaN data'
     elif not comp_flag and rem_flag:
+        # TODO: only drop values for emotion ratings!
         data = data.dropna(thresh=150)
         txt_flag = 'without NaN data (if more than 50%)'
     # sample data
@@ -135,7 +159,6 @@ def main(data, comp_flag, rem_flag, code_lng, num_surv, filter):
     tot_rat = data.shape[0] * len(emo_enc) * len(list_songs)
 
     if tot_cnt == 0:
-        pdb.set_trace()
         tot_cnt = tot_rat
     rate_cnt = tot_cnt / tot_rat
     print('**********************')
@@ -158,34 +181,22 @@ def main(data, comp_flag, rem_flag, code_lng, num_surv, filter):
     if print_gold_msi:
         print_gold_msi_data(data)
     print('**********************')
+    # calculate agreement across every rating of emotion for each quad [2 or 3 emotions per quad]
+    if quad_flag:
+        pdb.set_trace()
+
     # calculate agreement across every rating of emotion [emotion rated for all songs]
-    for key in emo_enc.keys():
-        idx = ['{}:{}'.format(_, key) for _ in list_songs]
-        # mean across all emotions
-        dict_emo_mean[emo_enc[key]] = np.mean(mean_raters[idx])
-        dict_emo_std[emo_enc[key]] = np.mean(std_raters[idx])
-        # agreement alpha
-        dict_emo_agree[emo_enc[key]] = krippendorf.alpha(reliability_data=data[idx],
-                                                         level_of_measurement='ordinal')
-
-    if not pretty_print:
-        print('Mean:')
-        for key in sorted(dict_emo_mean.keys()):
-            # print(key, dict_emo_mean[key])
-            print('{:.3f}'.format(dict_emo_mean[key]))    
-        print('Standard dev.:')
-        for key in sorted(dict_emo_std.keys()):
-            # print(key, dict_emo_std[key])  
-            print('{:.3f}'.format(dict_emo_std[key]))
-        print('Agreement:')
-        for key in sorted(dict_emo_agree.keys()):
-            # print(key, dict_emo_agree[key])
-            print('{:.3f}'.format(dict_emo_agree[key]))
-
     else:
-        # TODO!
-        pass
-    # pdb.set_trace()
+        for key in emo_enc.keys():
+            idx = ['{}:{}'.format(_, key) for _ in list_songs]
+            # mean across all emotions
+            dict_emo_mean[emo_enc[key]] = np.mean(mean_raters[idx])
+            dict_emo_std[emo_enc[key]] = np.mean(std_raters[idx])
+            # agreement alpha
+            dict_emo_agree[emo_enc[key]] = krippendorf.alpha(reliability_data=data[idx],
+                                                             level_of_measurement='ordinal')
+            print_results(dict_emo_mean, dict_emo_std, dict_emo_agree, pretty_print)
+
 
 
 
@@ -197,39 +208,62 @@ if __name__ == "__main__":
     parser.add_argument('-l',
                         '--language',
                         help='Select language to process',
+                        required=True,
                         action='store')
     parser.add_argument('-c',
                         '--complete',
                         help='Complete ratings [y] or drop missing/NaN ratings [n]',
+                        required=True,
                         action='store')
     parser.add_argument('-r',
                         '--remove',
                         help='Keep neutral ratings [y] or not [n]',
+                        required=True,
+                        action='store')
+    parser.add_argument('-q',
+                        '--quadrant',
+                        help='Process by quadrants [y] or by emotions [n]',
+                        required=True,
                         action='store')
     parser.add_argument('-n',
                         '--number',
                         help='Number of surveys to process with random sampling',
-                        action='store',
-                        default=False)
+                        action='store')
     parser.add_argument('-f',
                         '--filter',
                         help='Select filter for data [preference, familiarity, understanding]',
-                        action='store',
-                        default=False)
+                        action='store')
     args = parser.parse_args()
 
     if args.language is None:
         print('Please select data to process!')
+        sys.exit(0)
     if args.complete is None:
         print('Please state if you want to process all collected data or not!')
+        sys.exit(0)
     if args.remove is None:
         print('Please state if you want to keep neutral ratings or not!')
+        sys.exit(0)
+    if args.quadrant is None:
+        print('Please state if process by quadrants or by emotions!')
+        sys.exit(0)
+    if args.filter != 'f1' and args.filter != 'f2' and args.filter != 'p1' and args.filter != 'p2' and args.filter != 'u1' and args.filter != 'u2' and args.filter is not None:
+        print('Please choose a valid filter!')
+        sys.exit(0)
+    if args.number is None:
+        num_to_proc = 0
 
     # complete data processing
     if args.complete == 'y':
         comp_flag = True
     elif args.complete == 'n':
         comp_flag = False
+
+    # quadrants data processing
+    if args.quadrant == 'y':
+        quad_flag = True
+    elif args.quadrant == 'n':
+        quad_flag = False
 
     # neutral ratings processing
     if args.remove == 'y':
@@ -285,4 +319,5 @@ if __name__ == "__main__":
                 elif num_row > 0:
                     code_lng.append(lang_name)
                     data.append(row)
-    main(data, comp_flag, rem_flag, code_lng, int(args.number), args.filter)
+
+    main(data, comp_flag, rem_flag, quad_flag, code_lng, num_to_proc, args.filter)
