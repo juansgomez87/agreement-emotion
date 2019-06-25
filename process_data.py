@@ -26,9 +26,10 @@ def print_gold_msi_data(data):
     print('F6 - General sophistication: range 18-126 > population mean 81.58')
     print('Sample score (mean - {:.2f}, std - {:.2f})'.format(np.nanmean(data['mus_soph:1']), np.nanstd(data['mus_soph:1'])))
 
-def remove_samples_by_threshold(data, emo_enc, sel_enc, list_songs, idx_smp, sel):
+def filter_samples(data, emo_enc, sel_enc, list_songs, idx_smp, sel):
     """
     """
+    cnt = 0 
     if sel == 0:
         txt_to_print = '{} (all - positive (>3) and negative(<3))\n'.format(sel_enc[idx_smp])
     elif sel == 1:
@@ -37,35 +38,60 @@ def remove_samples_by_threshold(data, emo_enc, sel_enc, list_songs, idx_smp, sel
             idx = ['{}:{}'.format(_, key) for _ in list_songs]
             sel_idx = ['{}:{}'.format(_, str(idx_smp)) for _ in list_songs]
             for idx_rat, idx_sel in zip(idx, sel_idx):
+                # set values less than 3 to nan
                 data[idx_rat].iloc[np.where(data[idx_sel] < 3)[0]] = np.nan
+                # count values higher than 3
+                cnt += np.sum(data[idx_sel] > 3)
     elif sel == 2:
         txt_to_print = '{} (negative (<3))\n'.format(sel_enc[idx_smp])
         for key in emo_enc.keys():
             idx = ['{}:{}'.format(_, key) for _ in list_songs]
             sel_idx = ['{}:{}'.format(_, str(idx_smp)) for _ in list_songs]
             for idx_rat, idx_sel in zip(idx, sel_idx):
+                # set values higher than 3 to nan
                 data[idx_rat].iloc[np.where(data[idx_sel] > 3)[0]] = np.nan
-    return data, txt_to_print
+                # count values less than 3
+                cnt += np.sum(data[idx_sel] < 3)
+    return data, txt_to_print, cnt
 
-def main(data, comp_flag, rem_flag, code_lng, num_surv):
+def select_filter(filter):
+    # selector of subsets: 0 - select all, 1 - select positive, 2 - select negative
+    # e.g. 1 - select surveys that understand lyrics, 2 - select surveys that don't understand lyrics
+    sel_preferred_songs = 0
+    sel_familiar_songs = 0
+    sel_understood_songs = 0
+    if filter == 'p1':
+        sel_preferred_songs = 1
+    elif filter == 'p2':
+        sel_preferred_songs = 2
+    elif filter == 'f1':
+        sel_familiar_songs = 1
+    elif filter == 'f2':
+        sel_familiar_songs = 2
+    elif filter == 'u1':
+        sel_understood_songs = 1
+    elif filter == 'u2':
+        sel_understood_songs = 2
+    return sel_preferred_songs, sel_familiar_songs, sel_understood_songs
+
+
+def main(data, comp_flag, rem_flag, code_lng, num_surv, filter):
     """
 
     """
     # configuration flags
     pretty_print = False
     print_gold_msi = False
-    # selector of subsets: 0 - select all, 1 - select positive, 2 - select negative
-    # e.g. 1 - select surveys that understand lyrics, 2 - select surveys that don't understand lyrics
-    sel_preferred_songs = 0
-    sel_familiar_songs = 0
-    sel_understood_songs = 0
+    sel_preferred_songs, sel_familiar_songs, sel_understood_songs = select_filter(filter)
 
     emo_enc = {1: 'anger', 2: 'bitter', 3: 'fear', 4: 'joy', 5: 'peace',  6: 'power',
                7: 'sad', 8: 'surprise', 9: 'tender', 10: 'tension', 11: 'transcendence'}
     sel_enc = {12: 'preference', 13: 'familiarity', 14: 'understanding'}
     # TODO: how to implement quadrant mapping agreement???
-    quads = ['q1_a_pos_v_pos', 'q2_a_pos_v_neg',
-             'q3_a_neg_v_neg', 'q4_a_neg_v_pos']
+    quad_enc = {'q1_a_pos_v_pos': ['joy', 'power', 'surprise'],
+                'q2_a_pos_v_neg': ['anger', 'fear', 'tension'],
+                'q3_a_neg_v_neg': ['bitter', 'sad'],
+                'q4_a_neg_v_pos': ['peace', 'tender', 'transcendence']}
     # get list of songs
     dirs = os.listdir('./data_normalized')
     list_songs = [_.replace('.mp3', '') for _ in dirs]
@@ -74,7 +100,7 @@ def main(data, comp_flag, rem_flag, code_lng, num_surv):
     dict_emo_std = {k: [] for k in emo_enc.values()}
     dict_emo_agree = {k: [] for k in emo_enc.values()}
 
-    dict_quad_agree = {k: [] for k in quads}
+    dict_quad_agree = {k: [] for k in quad_enc}
 
     # remove additional empty spaces from csv load wrt length of header
     num_params = len(data[0])
@@ -86,7 +112,7 @@ def main(data, comp_flag, rem_flag, code_lng, num_surv):
     # clean data from missing data
     txt_flag = 'with NaN data'
     if not comp_flag and not rem_flag:
-        data = data.dropna() #thresh=150)
+        data = data.dropna()
         txt_flag = 'without NaN data'
     elif not comp_flag and rem_flag:
         data = data.dropna(thresh=150)
@@ -94,21 +120,28 @@ def main(data, comp_flag, rem_flag, code_lng, num_surv):
     # sample data
     if num_surv != 0:
         data = pd.concat([x.sample(n=num_surv) for x in [data.loc[_] for _ in langs]])
-    pdb.set_trace()
+    # pdb.set_trace()
     # sample by preference
     idx_smp = 12
-    data, txt_pref = remove_samples_by_threshold(data, emo_enc, sel_enc, list_songs, idx_smp, sel_preferred_songs)
+    data, txt_pref, cnt_pref = filter_samples(data, emo_enc, sel_enc, list_songs, idx_smp, sel_preferred_songs)
     # sample by familiarity
     idx_smp = 13
-    data, txt_fam = remove_samples_by_threshold(data, emo_enc, sel_enc, list_songs, idx_smp, sel_familiar_songs)
+    data, txt_fam, cnt_fam = filter_samples(data, emo_enc, sel_enc, list_songs, idx_smp, sel_familiar_songs)
     # sample by understood_songs
     idx_smp = 14
-    data, txt_und = remove_samples_by_threshold(data, emo_enc, sel_enc, list_songs, idx_smp, sel_understood_songs)
+    data, txt_und, cnt_und = filter_samples(data, emo_enc, sel_enc, list_songs, idx_smp, sel_understood_songs)
     txt_to_print = txt_pref + txt_fam + txt_und
+    tot_cnt = cnt_pref + cnt_fam + cnt_und
+    tot_rat = data.shape[0] * len(emo_enc) * len(list_songs)
 
+    if tot_cnt == 0:
+        pdb.set_trace()
+        tot_cnt = tot_rat
+    rate_cnt = tot_cnt / tot_rat
     print('**********************')
     print('{} surveys processed in {} {}'.format(data.shape[0], langs, txt_flag))
     print('Subsets:\n{}'.format(txt_to_print))
+    print('{}/{} ratings ({})'.format(tot_cnt, tot_rat, rate_cnt))
 
     # mean and std across raters
     mean_raters = data.mean()
@@ -138,13 +171,16 @@ def main(data, comp_flag, rem_flag, code_lng, num_surv):
     if not pretty_print:
         print('Mean:')
         for key in sorted(dict_emo_mean.keys()):
-            print(key, dict_emo_mean[key])     
+            # print(key, dict_emo_mean[key])
+            print('{:.3f}'.format(dict_emo_mean[key]))    
         print('Standard dev.:')
         for key in sorted(dict_emo_std.keys()):
-            print(key, dict_emo_std[key])     
+            # print(key, dict_emo_std[key])  
+            print('{:.3f}'.format(dict_emo_std[key]))
         print('Agreement:')
         for key in sorted(dict_emo_agree.keys()):
-            print(key, dict_emo_agree[key])
+            # print(key, dict_emo_agree[key])
+            print('{:.3f}'.format(dict_emo_agree[key]))
 
     else:
         # TODO!
@@ -156,28 +192,29 @@ def main(data, comp_flag, rem_flag, code_lng, num_surv):
 
 
 if __name__ == "__main__":
-    # usage python3 process_data.py -l [e/s/m/g] -c [y/n] -n [integer]
+    # usage python3 process_data.py -l [e/s/m/g] -c [y/n] -r [y/n] -n [integer] -f [p0,p1,p2,f0,f1,f2,u0,u1,u2]
     parser = argparse.ArgumentParser()
     parser.add_argument('-l',
                         '--language',
                         help='Select language to process',
-                        action='store',
-                        dest='language')
+                        action='store')
     parser.add_argument('-c',
                         '--complete',
-                        help='Complete ratings [y] or use missing/NaN ratings [n]',
-                        action='store',
-                        dest='complete')
+                        help='Complete ratings [y] or drop missing/NaN ratings [n]',
+                        action='store')
     parser.add_argument('-r',
                         '--remove',
                         help='Keep neutral ratings [y] or not [n]',
-                        action='store',
-                        dest='remove')
+                        action='store')
     parser.add_argument('-n',
                         '--number',
                         help='Number of surveys to process with random sampling',
                         action='store',
-                        dest='number',
+                        default=False)
+    parser.add_argument('-f',
+                        '--filter',
+                        help='Select filter for data [preference, familiarity, understanding]',
+                        action='store',
                         default=False)
     args = parser.parse_args()
 
@@ -186,7 +223,7 @@ if __name__ == "__main__":
     if args.complete is None:
         print('Please state if you want to process all collected data or not!')
     if args.remove is None:
-        print('Please state if you want to process all collected data or not!')
+        print('Please state if you want to keep neutral ratings or not!')
 
     # complete data processing
     if args.complete == 'y':
@@ -202,6 +239,7 @@ if __name__ == "__main__":
         rem_tx = ''
         rem_flag = False
 
+    # file selection
     if args.language == 'e' or args.language == 'english':
         file_name = ['./results/data_english{}.csv'.format(rem_tx)]
         lang = ['english']
@@ -247,4 +285,4 @@ if __name__ == "__main__":
                 elif num_row > 0:
                     code_lng.append(lang_name)
                     data.append(row)
-    main(data, comp_flag, rem_flag, code_lng, int(args.number))
+    main(data, comp_flag, rem_flag, code_lng, int(args.number), args.filter)
