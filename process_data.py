@@ -41,7 +41,7 @@ def print_results(mean, std, agree, pretty_print):
         print('Agreement:')
         for key in sorted(agree.keys()):
             # print(key, dict_emo_agree[key])
-            print('{:.3f}'.format(gree[key]))
+            print('{:.3f}'.format(agree[key]))
     else:
         # TODO: implement pretty print for latex
         pass
@@ -102,7 +102,7 @@ def main(data, comp_flag, rem_flag, quad_flag, code_lng, num_surv, filter):
     """
     # configuration flags
     pretty_print = False
-    print_gold_msi = True
+    print_gold_msi = False
     sel_preferred_songs, sel_familiar_songs, sel_understood_songs = select_filter(filter)
 
     emo_enc = {1: 'anger', 2: 'bitter', 3: 'fear', 4: 'joy', 5: 'peace',  6: 'power',
@@ -138,13 +138,12 @@ def main(data, comp_flag, rem_flag, quad_flag, code_lng, num_surv, filter):
         data = data.dropna()
         txt_flag = 'without NaN data'
     elif not comp_flag and rem_flag:
-        # TODO: only drop values for emotion ratings!
-        data = data.dropna(thresh=150)
-        txt_flag = 'without NaN data (if more than 50%)'
+        data = data.dropna(thresh=205)
+        txt_flag = 'without NaN data (if all ratings were 3 - thresh 210)'
     # sample data
     if num_surv != 0:
         data = pd.concat([x.sample(n=num_surv) for x in [data.loc[_] for _ in langs]])
-    # pdb.set_trace()
+
     # sample by preference
     idx_smp = 12
     data, txt_pref, cnt_pref = filter_samples(data, emo_enc, sel_enc, list_songs, idx_smp, sel_preferred_songs)
@@ -183,7 +182,19 @@ def main(data, comp_flag, rem_flag, quad_flag, code_lng, num_surv, filter):
     print('**********************')
     # calculate agreement across every rating of emotion for each quad [2 or 3 emotions per quad]
     if quad_flag:
-        pdb.set_trace()
+        for key, list_emo in quad_enc.items():
+            num_emo = [[key for key, val in emo_enc.items() if val == _] for _ in list_emo]
+            num_emo = [y for x in num_emo for y in x]
+            idx = [['{}:{}'.format(song, _) for song in list_songs] for _ in num_emo]
+            idx = [y for x in idx for y in x]
+            # mean across all emotions
+            dict_quad_mean[key] = np.mean(mean_raters[idx])
+            dict_quad_std[key] = np.mean(std_raters[idx])
+            # agreement alpha
+            dict_quad_agree[key] = krippendorf.alpha(reliability_data=data[idx],
+                                                     level_of_measurement='ordinal')
+            # pdb.set_trace()
+        print_results(dict_quad_mean, dict_quad_std, dict_quad_agree, pretty_print)
 
     # calculate agreement across every rating of emotion [emotion rated for all songs]
     else:
@@ -195,7 +206,7 @@ def main(data, comp_flag, rem_flag, quad_flag, code_lng, num_surv, filter):
             # agreement alpha
             dict_emo_agree[emo_enc[key]] = krippendorf.alpha(reliability_data=data[idx],
                                                              level_of_measurement='ordinal')
-            print_results(dict_emo_mean, dict_emo_std, dict_emo_agree, pretty_print)
+        print_results(dict_emo_mean, dict_emo_std, dict_emo_agree, pretty_print)
 
 
 
@@ -250,8 +261,12 @@ if __name__ == "__main__":
     if args.filter != 'f1' and args.filter != 'f2' and args.filter != 'p1' and args.filter != 'p2' and args.filter != 'u1' and args.filter != 'u2' and args.filter is not None:
         print('Please choose a valid filter!')
         sys.exit(0)
+
+    # num of surveys to sample
     if args.number is None:
         num_to_proc = 0
+    else:
+        num_to_proc = int(args.number)
 
     # complete data processing
     if args.complete == 'y':
