@@ -17,9 +17,9 @@ with respect to these factors, and attempt to replicate previous studies that sh
 
 ## Usage
 
-
- python process_data.py [-h] -l LANGUAGE -c COMPLETE -r REMOVE -q QUADRANT
-                        [-n NUMBER] [-f FILTER]
+```python
+python process_data.py [-h] -l LANGUAGE -c COMPLETE -r REMOVE -q QUADRANT
+                       [-n NUMBER] [-f FILTER]
 
 optional arguments:
   -h, --help            show this help message and exit
@@ -36,6 +36,8 @@ optional arguments:
   -f FILTER, --filter FILTER
                         Select filter for data [preference, familiarity,
                         understanding]
+```
 
+## Data Analysis
 
 [Agreement results](https://docs.google.com/spreadsheets/d/16rNh481Zs8CZTdJTmnME2i84R1JXFegIC0WcNZ5rds8/edit#gid=0)
