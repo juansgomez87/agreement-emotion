@@ -108,7 +108,6 @@ def main(data, comp_flag, rem_flag, quad_flag, code_lng, num_surv, filter):
     emo_enc = {1: 'anger', 2: 'bitter', 3: 'fear', 4: 'joy', 5: 'peace',  6: 'power',
                7: 'sad', 8: 'surprise', 9: 'tender', 10: 'tension', 11: 'transcendence'}
     sel_enc = {12: 'preference', 13: 'familiarity', 14: 'understanding'}
-    # TODO: how to implement quadrant mapping agreement???
     quad_enc = {'q1_a_pos_v_pos': ['joy', 'power', 'surprise'],
                 'q2_a_pos_v_neg': ['anger', 'fear', 'tension'],
                 'q3_a_neg_v_neg': ['bitter', 'sad'],
@@ -214,7 +213,7 @@ def main(data, comp_flag, rem_flag, quad_flag, code_lng, num_surv, filter):
 
 
 if __name__ == "__main__":
-    # usage python3 process_data.py -l [e/s/m/g] -c [y/n] -r [y/n] -n [integer] -f [p0,p1,p2,f0,f1,f2,u0,u1,u2]
+    # usage python3 process_data.py -l [e/s/m/g] -c [y/n] -r [y/n] -n [integer] -f [p1,p2,f1,f2,u1,u2]
     parser = argparse.ArgumentParser()
     parser.add_argument('-l',
                         '--language',
