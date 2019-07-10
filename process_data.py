@@ -50,7 +50,7 @@ def print_results(mean, std, agree, pretty_print):
 def filter_samples(data, emo_enc, sel_enc, list_songs, idx_smp, sel):
     """
     """
-    cnt = 0 
+    cnt = 0
     if sel == 0:
         txt_to_print = '{} (all - positive (>3) and negative(<3))\n'.format(sel_enc[idx_smp])
     elif sel == 1:
@@ -290,6 +290,8 @@ if __name__ == "__main__":
     # file selection
     if args.language == 'e' or args.language == 'english':
         file_name = ['./results/data_english{}.csv'.format(rem_tx)]
+        nat_sel = int(input('Please select all english surveys [1] or only native [2]'))
+        pdb.set_trace()
         lang = ['english']
     elif args.language == 's' or args.language == 'spanish':
         file_name = ['./results/data_spanish{}.csv'.format(rem_tx)]
@@ -306,7 +308,6 @@ if __name__ == "__main__":
                      './results/data_mandarin{}.csv'.format(rem_tx),
                      './results/data_german{}.csv'.format(rem_tx)]
         lang = ['english', 'spanish', 'mandarin', 'german']
-
 
     data = []
     code_lng = []
