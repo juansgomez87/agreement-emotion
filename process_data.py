@@ -96,7 +96,7 @@ def select_filter(filter):
     return sel_preferred_songs, sel_familiar_songs, sel_understood_songs
 
 
-def main(data, comp_flag, rem_flag, quad_flag, code_lng, num_surv, filter):
+def main(data, comp_flag, rem_flag, quad_flag, code_lng, num_surv, filter, lang_filter):
     """
 
     """
@@ -115,6 +115,25 @@ def main(data, comp_flag, rem_flag, quad_flag, code_lng, num_surv, filter):
     # get list of songs
     dirs = os.listdir('./data_normalized')
     list_songs = [_.replace('.mp3', '') for _ in dirs]
+
+    list_inst = ['anger_2', 'fear_1']
+    list_spa = ['peace_2', 'sad_2', 'tender_2']
+    list_non_eng = list_spa + list_inst
+    list_eng = [_ for _ in list_songs if _ not in list_non_eng]
+    # select songs depending on lyrics to process
+    if lang_filter == 'all':
+        pass
+        txt_lyrics = 'with lyrics in all languages'
+    elif lang_filter == 'inst':
+        list_songs = list_inst
+        txt_lyrics = 'with instrumental music'
+    elif lang_filter == 'eng':
+        list_songs = list_eng
+        txt_lyrics = 'with lyrics in english'
+    elif lang_filter == 'spa':
+        list_songs = list_spa
+        txt_lyrics = 'with lyrics in spanish'
+
     # results dictionaries for emotions
     dict_emo_mean = {k: [] for k in emo_enc.values()}
     dict_emo_std = {k: [] for k in emo_enc.values()}
@@ -160,7 +179,7 @@ def main(data, comp_flag, rem_flag, quad_flag, code_lng, num_surv, filter):
         tot_cnt = tot_rat
     rate_cnt = tot_cnt / tot_rat
     print('**********************')
-    print('{} surveys processed in {} {}'.format(data.shape[0], langs, txt_flag))
+    print('{} surveys processed in {} {} {}'.format(data.shape[0], langs, txt_flag, txt_lyrics))
     print('Subsets:\n{}'.format(txt_to_print))
     print('{}/{} ratings ({})'.format(tot_cnt, tot_rat, rate_cnt))
 
@@ -168,6 +187,7 @@ def main(data, comp_flag, rem_flag, quad_flag, code_lng, num_surv, filter):
     mean_raters = data.mean()
     std_raters = data.std()
 
+    
     # print demographics
     # calculate demographics after filters
     print('AGE: mean - {:.2f}, std - {:.2f}'.format(mean_raters['demographics1:3'], std_raters['demographics1:3']))
@@ -235,13 +255,18 @@ if __name__ == "__main__":
                         help='Process by quadrants [y] or by emotions [n]',
                         required=True,
                         action='store')
+    parser.add_argument('-lf',
+                        '--lang_filter',
+                        help='Process lyrics for all songs [all], instrumental [inst], english [eng], spanish [spa]',
+                        required=True,
+                        action='store')
     parser.add_argument('-n',
                         '--number',
                         help='Number of surveys to process with random sampling',
                         action='store')
     parser.add_argument('-f',
                         '--filter',
-                        help='Select filter for data [preference, familiarity, understanding]',
+                        help='Select filter for data [preference, familiarity, understanding, instrumental, spanish, english]',
                         action='store')
     args = parser.parse_args()
 
@@ -260,6 +285,10 @@ if __name__ == "__main__":
     if args.filter != 'f1' and args.filter != 'f2' and args.filter != 'p1' and args.filter != 'p2' and args.filter != 'u1' and args.filter != 'u2' and args.filter is not None:
         print('Please choose a valid filter!')
         sys.exit(0)
+    if args.lang_filter != 'all' and args.lang_filter != 'inst' and args.lang_filter != 'eng' and args.lang_filter != 'spa' and args.lang_filter is not None:
+        print('Please choose a valid lyrics filter!')
+        sys.exit(0)   
+
 
     # num of surveys to sample
     if args.number is None:
@@ -290,8 +319,8 @@ if __name__ == "__main__":
     # file selection
     if args.language == 'e' or args.language == 'english':
         file_name = ['./results/data_english{}.csv'.format(rem_tx)]
-        nat_sel = int(input('Please select all english surveys [1] or only native [2]'))
-        pdb.set_trace()
+        # nat_sel = int(input('Please select all english surveys [1] or only native [2]'))
+        # pdb.set_trace()
         lang = ['english']
     elif args.language == 's' or args.language == 'spanish':
         file_name = ['./results/data_spanish{}.csv'.format(rem_tx)]
@@ -335,4 +364,4 @@ if __name__ == "__main__":
                     code_lng.append(lang_name)
                     data.append(row)
 
-    main(data, comp_flag, rem_flag, quad_flag, code_lng, num_to_proc, args.filter)
+    main(data, comp_flag, rem_flag, quad_flag, code_lng, num_to_proc, args.filter, args.lang_filter)
