@@ -160,7 +160,13 @@ def main(data, comp_flag, rem_flag, quad_flag, code_lng, num_surv, filter, lang_
         txt_flag = 'without NaN data (if all ratings were 3 - thresh 210)'
     # sample data
     if num_surv != 0:
-        data = pd.concat([x.sample(n=num_surv) for x in [data.loc[_] for _ in langs]])
+        option = 2
+        if option == 1:
+            # option 1 (sample num_surv from each language)
+            data = pd.concat([x.sample(n=num_surv) for x in [data.loc[_] for _ in langs]])
+        else:
+            # option 2 (sample num_surv from all surveys)
+            data = data.sample(n=num_surv)
 
     # sample by preference
     idx_smp = 12
