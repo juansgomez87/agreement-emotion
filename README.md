@@ -18,8 +18,8 @@ with respect to these factors, and attempt to replicate previous studies that sh
 ## Usage
 
 ```python
-python process_data.py [-h] -l LANGUAGE -c COMPLETE -r REMOVE -q QUADRANT
-                       [-n NUMBER] [-f FILTER]
+usage: process_data.py [-h] -l LANGUAGE -c COMPLETE -r REMOVE -q QUADRANT -lf
+                       LANG_FILTER [-n NUMBER] [-f FILTER]
 
 optional arguments:
   -h, --help            show this help message and exit
@@ -31,11 +31,15 @@ optional arguments:
                         Keep neutral ratings [y] or not [n]
   -q QUADRANT, --quadrant QUADRANT
                         Process by quadrants [y] or by emotions [n]
+  -lf LANG_FILTER, --lang_filter LANG_FILTER
+                        Process lyrics for all songs [all], instrumental
+                        [inst], english [eng], spanish [spa]
   -n NUMBER, --number NUMBER
                         Number of surveys to process with random sampling
   -f FILTER, --filter FILTER
                         Select filter for data [preference, familiarity,
-                        understanding]
+                        understanding, instrumental, spanish, english]
+
 ```
 
 ## Data Analysis
