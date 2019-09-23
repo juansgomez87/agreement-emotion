@@ -251,9 +251,9 @@ if __name__ == "__main__":
                         help='Complete ratings [y] or drop missing/NaN ratings [n]',
                         required=True,
                         action='store')
-    parser.add_argument('-r',
+    parser.add_argument('-rc',
                         '--remove',
-                        help='Keep neutral ratings [y] or not [n]',
+                        help='Cluster to 3 ratings [y] or maintain [n]',
                         required=True,
                         action='store')
     parser.add_argument('-q',
@@ -316,7 +316,7 @@ if __name__ == "__main__":
 
     # neutral ratings processing
     if args.remove == 'y':
-        rem_tx = '.no.neu'
+        rem_tx = '.clust'
         rem_flag = True
     elif args.remove == 'n':
         rem_tx = ''
