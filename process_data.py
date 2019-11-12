@@ -102,7 +102,7 @@ def main(data, comp_flag, rem_flag, quad_flag, code_lng, num_surv, filter, lang_
     """
     # configuration flags
     pretty_print = False
-    print_gold_msi = False
+    print_gold_msi = True
     sel_preferred_songs, sel_familiar_songs, sel_understood_songs = select_filter(filter)
 
     emo_enc = {1: 'anger', 2: 'bitter', 3: 'fear', 4: 'joy', 5: 'peace',  6: 'power',
@@ -156,7 +156,7 @@ def main(data, comp_flag, rem_flag, quad_flag, code_lng, num_surv, filter, lang_
         data = data.dropna()
         txt_flag = 'without NaN data'
     elif not comp_flag and rem_flag:
-        data = data.dropna(thresh=205)
+        data = data.dropna()
         txt_flag = 'without NaN data (if all ratings were 3 - thresh 210)'
     # sample data
     if num_surv != 0:
@@ -272,7 +272,7 @@ if __name__ == "__main__":
                         action='store')
     parser.add_argument('-f',
                         '--filter',
-                        help='Select filter for data [preference, familiarity, understanding, instrumental, spanish, english]',
+                        help='Select filter for data [preference, familiarity, understanding]',
                         action='store')
     args = parser.parse_args()
 
