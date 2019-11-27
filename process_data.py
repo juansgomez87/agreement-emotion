@@ -102,7 +102,7 @@ def main(data, comp_flag, rem_flag, quad_flag, code_lng, num_surv, filter, lang_
     """
     # configuration flags
     pretty_print = False
-    print_gold_msi = True
+    print_gold_msi = False
     sel_preferred_songs, sel_familiar_songs, sel_understood_songs = select_filter(filter)
 
     emo_enc = {1: 'anger', 2: 'bitter', 3: 'fear', 4: 'joy', 5: 'peace',  6: 'power',
@@ -181,6 +181,10 @@ def main(data, comp_flag, rem_flag, quad_flag, code_lng, num_surv, filter, lang_
     tot_cnt = cnt_pref + cnt_fam + cnt_und
     tot_rat = data.shape[0] * len(emo_enc) * len(list_songs)
 
+    # save data with filters
+    filename = 'results/data.{}.csv'.format(filter)
+    data.to_csv(filename)
+
     if tot_cnt == 0:
         tot_cnt = tot_rat
     rate_cnt = tot_cnt / tot_rat
@@ -229,8 +233,11 @@ def main(data, comp_flag, rem_flag, quad_flag, code_lng, num_surv, filter, lang_
             dict_emo_mean[emo_enc[key]] = np.mean(mean_raters[idx])
             dict_emo_std[emo_enc[key]] = np.mean(std_raters[idx])
             # agreement alpha
+            # pdb.set_trace()
             dict_emo_agree[emo_enc[key]] = krippendorf.alpha(reliability_data=data[idx],
                                                              level_of_measurement='ordinal')
+            # test = krippendorf.alpha(reliability_data=data[idx], level_of_measurement='nominal')
+            # print(dict_emo_agree[emo_enc[key]], test)
         print_results(dict_emo_mean, dict_emo_std, dict_emo_agree, pretty_print)
 
 
