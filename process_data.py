@@ -96,7 +96,7 @@ def select_filter(filter):
     return sel_preferred_songs, sel_familiar_songs, sel_understood_songs
 
 
-def main(data, comp_flag, rem_flag, quad_flag, code_lng, num_surv, filter, lang_filter):
+def main(data, comp_flag, rem_flag, quad_flag, box_flag, code_lng, num_surv, filter, lang_filter):
     """
 
     """
@@ -181,9 +181,9 @@ def main(data, comp_flag, rem_flag, quad_flag, code_lng, num_surv, filter, lang_
     tot_cnt = cnt_pref + cnt_fam + cnt_und
     tot_rat = data.shape[0] * len(emo_enc) * len(list_songs)
 
-    # save data with filters
-    filename = 'results/data.{}.csv'.format(filter)
-    data.to_csv(filename)
+    # # save data with filters
+    # filename = 'results/data.{}.csv'.format(filter)
+    # data.to_csv(filename)
 
     if tot_cnt == 0:
         tot_cnt = tot_rat
@@ -197,7 +197,22 @@ def main(data, comp_flag, rem_flag, quad_flag, code_lng, num_surv, filter, lang_
     mean_raters = data.mean()
     std_raters = data.std()
 
-    
+    if box_flag:
+        from plotly.subplots import make_subplots
+        import plotly.graph_objects as go
+        fig = make_subplots(rows=1, cols=len(list_songs), subplot_titles=(list_songs))
+        for idx, song in enumerate(list_songs):
+            cols = [song+':{}'.format(_) for _ in emo_enc.keys()]
+            labs = [_ for _ in emo_enc.values()]
+
+            df = data.filter(cols) 
+            for lab, col in zip(labs, cols):
+                fig.add_trace(go.Box(y=df[col], name=lab, boxpoints='outliers', boxmean=True), row=1, col=idx+1)
+           
+        fig.show()
+        # # to save conda activate base
+        # fig.write_image("outliers.png", width=3300, height=350, scale=2)
+
     # print demographics
     # calculate demographics after filters
     print('AGE: mean - {:.2f}, std - {:.2f}'.format(mean_raters['demographics1:3'], std_raters['demographics1:3']))
@@ -281,6 +296,10 @@ if __name__ == "__main__":
                         '--filter',
                         help='Select filter for data [preference, familiarity, understanding]',
                         action='store')
+    parser.add_argument('-bp',
+                        '--boxplot',
+                        help='Create boxplot [y] or not [n]',
+                        action='store')
     args = parser.parse_args()
 
     if args.language is None:
@@ -328,6 +347,12 @@ if __name__ == "__main__":
     elif args.remove == 'n':
         rem_tx = ''
         rem_flag = False
+
+    if args.boxplot == 'y':
+        box_flag = True
+    elif args.boxplot == 'n':
+        box_flag = False
+
 
     # file selection
     if args.language == 'e' or args.language == 'english':
@@ -377,4 +402,4 @@ if __name__ == "__main__":
                     code_lng.append(lang_name)
                     data.append(row)
 
-    main(data, comp_flag, rem_flag, quad_flag, code_lng, num_to_proc, args.filter, args.lang_filter)
+    main(data, comp_flag, rem_flag, quad_flag, box_flag, code_lng, num_to_proc, args.filter, args.lang_filter)
