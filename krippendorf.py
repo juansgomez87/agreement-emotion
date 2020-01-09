@@ -3,6 +3,9 @@ This module provides a function to compute the Krippendorff's alpha statistical 
 when coding a set of units based on the values of a variable.
 For more information, see: https://en.wikipedia.org/wiki/Krippendorff%27s_alpha
 The module naming follows the one from the Wikipedia link.
+
+This code has been taken from https://github.com/pln-fing-udelar/fast-krippendorff
+Thank you to @bryant1410!
 """
 
 import numpy as np
