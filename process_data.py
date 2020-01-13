@@ -81,6 +81,7 @@ def select_filter(filter):
     sel_preferred_songs = 0
     sel_familiar_songs = 0
     sel_understood_songs = 0
+
     if filter == 'p1':
         sel_preferred_songs = 1
     elif filter == 'p2':
@@ -93,10 +94,11 @@ def select_filter(filter):
         sel_understood_songs = 1
     elif filter == 'u2':
         sel_understood_songs = 2
+
     return sel_preferred_songs, sel_familiar_songs, sel_understood_songs
 
 
-def main(data, comp_flag, rem_flag, quad_flag, box_flag, code_lng, num_surv, filter, lang_filter):
+def main(data, comp_flag, rem_flag, quad_flag, out_flag, code_lng, num_surv, filter, lang_filter):
     """
 
     """
@@ -177,9 +179,36 @@ def main(data, comp_flag, rem_flag, quad_flag, box_flag, code_lng, num_surv, fil
     # sample by understood_songs
     idx_smp = 14
     data, txt_und, cnt_und = filter_samples(data, emo_enc, sel_enc, list_songs, idx_smp, sel_understood_songs)
-    txt_to_print = txt_pref + txt_fam + txt_und
-    tot_cnt = cnt_pref + cnt_fam + cnt_und
-    tot_rat = data.shape[0] * len(emo_enc) * len(list_songs)
+    # sample listeners by music sophistication
+    # as reported by Mullensiefen et al.
+    all_raters = data.shape[0]
+    mean_mt = 26.52
+    mean_emo = 34.66
+    mean_soph = 81.58
+    txt_soph = 'music sophistication (all - positive (>mean) and negative(<mean))\n'
+    if filter == 'fm1':
+        txt_soph = 'F3 - Musical training (positive (>mean))\n'
+        data = data[data['mus_trai:1'] > mean_mt]
+    elif filter == 'fm2':
+        txt_soph = 'F3 - Musical training (negative (>mean))\n'
+        data = data[data['mus_trai:1'] < mean_mt]
+    elif filter == 'fe1':
+        txt_soph = 'F4 - Emotions (positive (>mean))\n'
+        data = data[data['emo:1'] > mean_emo]
+    elif filter == 'fe2':
+        txt_soph = 'F4 - Emotions (negative (>mean))\n'
+        data = data[data['emo:1'] < mean_emo]
+    elif filter == 'fs1':
+        txt_soph = 'F6 - General sophistication (positive (>mean))\n'
+        data = data[data['mus_soph:1'] > mean_soph]
+    elif filter == 'fs2':
+        txt_soph = 'F6 - General sophistication(negative (>mean))\n'
+        data = data[data['mus_soph:1'] < mean_soph]
+    cnt_soph = data.shape[0] * len(emo_enc) * len(list_songs)
+    
+    txt_to_print = txt_pref + txt_fam + txt_und + txt_soph
+    tot_cnt = cnt_pref + cnt_fam + cnt_und + cnt_soph
+    tot_rat = all_raters * len(emo_enc) * len(list_songs)
 
     # # save data with filters
     # filename = 'results/data.{}.csv'.format(filter)
@@ -197,19 +226,44 @@ def main(data, comp_flag, rem_flag, quad_flag, box_flag, code_lng, num_surv, fil
     mean_raters = data.mean()
     std_raters = data.std()
 
-    if box_flag:
+    if out_flag:
         from plotly.subplots import make_subplots
         import plotly.graph_objects as go
         fig = make_subplots(rows=1, cols=len(list_songs), subplot_titles=(list_songs))
+        out_matrix = np.zeros((data.shape[0], len(emo_enc), len(list_songs)))
         for idx, song in enumerate(list_songs):
             cols = [song+':{}'.format(_) for _ in emo_enc.keys()]
             labs = [_ for _ in emo_enc.values()]
 
-            df = data.filter(cols) 
-            for lab, col in zip(labs, cols):
+            df = data.filter(cols)
+            indices = df.reset_index()
+            
+            for i, (lab, col) in enumerate(zip(labs, cols)):
+                num_subj = df.shape[0]
+                iqr = df[col].quantile(0.75) - df[col].quantile(0.25)
+                # since data is discrete, if no iqr, assume outliers as values outside the median
+                if iqr == 0:
+                    num_out = df[df[col] != df[col].median()].shape[0]
+                    idx_out = indices[indices[col] != indices[col].median()].index
+
+                else:
+                    fence_low = df[col].quantile(0.25) - 1.5*iqr
+                    fence_high = df[col].quantile(0.75) + 1.5*iqr
+                    num_out = num_subj - df.loc[(df[col] > fence_low) & (df[col] < fence_high)].shape[0]
+                    idx_out = indices.loc[(indices[col] < fence_low) | (indices[col] > fence_high)].index
+                # count add outliers per song per emotion
+                out_matrix[idx_out, i, idx] = 1
+                # # uncomment for debugging
+                # print('Excerpt {}, from {} subjects, outliers {}'.format(col, num_subj, num_out))
                 fig.add_trace(go.Box(y=df[col], name=lab, boxpoints='outliers', boxmean=True), row=1, col=idx+1)
-           
+        out_matrix = np.reshape(out_matrix, (out_matrix.shape[0], out_matrix.shape[1]*out_matrix.shape[2]))
+        cnt_out = np.sum(out_matrix, axis=1)
+        print('User {} was the most outlier with {} ratings out of {} possibilities ({})'.format(np.argmax(cnt_out),
+                                                                                                 np.max(cnt_out),
+                                                                                                 out_matrix.shape[1],
+                                                                                                 (np.max(cnt_out)/out_matrix.shape[1])))
         fig.show()
+        pdb.set_trace()
         # # to save conda activate base
         # fig.write_image("outliers.png", width=3300, height=350, scale=2)
 
@@ -296,9 +350,9 @@ if __name__ == "__main__":
                         '--filter',
                         help='Select filter for data [preference, familiarity, understanding]',
                         action='store')
-    parser.add_argument('-bp',
-                        '--boxplot',
-                        help='Create boxplot [y] or not [n]',
+    parser.add_argument('-o',
+                        '--outlier',
+                        help='Analyze outliers [y] or not [n]',
                         action='store')
     args = parser.parse_args()
 
@@ -314,7 +368,13 @@ if __name__ == "__main__":
     if args.quadrant is None:
         print('Please state if process by quadrants or by emotions!')
         sys.exit(0)
-    if args.filter != 'f1' and args.filter != 'f2' and args.filter != 'p1' and args.filter != 'p2' and args.filter != 'u1' and args.filter != 'u2' and args.filter is not None:
+    if (args.filter != 'f1' and args.filter != 'f2' and
+        args.filter != 'p1' and args.filter != 'p2' and
+        args.filter != 'u1' and args.filter != 'u2' and
+        args.filter != 'fm1' and args.filter != 'fm2' and
+        args.filter != 'fe1' and args.filter != 'fe2' and
+        args.filter != 'fs1' and args.filter != 'fs2' and
+        args.filter is not None):
         print('Please choose a valid filter!')
         sys.exit(0)
     if args.lang_filter != 'all' and args.lang_filter != 'inst' and args.lang_filter != 'eng' and args.lang_filter != 'spa' and args.lang_filter is not None:
@@ -348,10 +408,10 @@ if __name__ == "__main__":
         rem_tx = ''
         rem_flag = False
 
-    if args.boxplot == 'y':
-        box_flag = True
-    elif args.boxplot == 'n':
-        box_flag = False
+    if args.outlier == 'y':
+        box_out = True
+    elif args.outlier == 'n':
+        box_out = False
 
 
     # file selection
@@ -402,4 +462,4 @@ if __name__ == "__main__":
                     code_lng.append(lang_name)
                     data.append(row)
 
-    main(data, comp_flag, rem_flag, quad_flag, box_flag, code_lng, num_to_proc, args.filter, args.lang_filter)
+    main(data, comp_flag, rem_flag, quad_flag, box_out, code_lng, num_to_proc, args.filter, args.lang_filter)
