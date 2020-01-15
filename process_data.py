@@ -98,7 +98,7 @@ def select_filter(filter):
     return sel_preferred_songs, sel_familiar_songs, sel_understood_songs
 
 
-def main(data, comp_flag, rem_flag, quad_flag, out_flag, code_lng, num_surv, filter, lang_filter):
+def main(data, comp_flag, rem_flag, quad_flag, out_flag, clu_flag, code_lng, num_surv, filter, lang_filter):
     """
 
     """
@@ -204,7 +204,10 @@ def main(data, comp_flag, rem_flag, quad_flag, out_flag, code_lng, num_surv, fil
     elif filter == 'fs2':
         txt_soph = 'F6 - General sophistication(negative (>mean))\n'
         data = data[data['mus_soph:1'] < mean_soph]
-    cnt_soph = data.shape[0] * len(emo_enc) * len(list_songs)
+    if filter == 'fm1' or filter == 'fm2' or filter == 'fe1' or filter == 'fe2' or filter == 'fs1' or filter == 'fms2':
+        cnt_soph = data.shape[0] * len(emo_enc) * len(list_songs)
+    else:
+        cnt_soph = 0
     
     txt_to_print = txt_pref + txt_fam + txt_und + txt_soph
     tot_cnt = cnt_pref + cnt_fam + cnt_und + cnt_soph
@@ -267,6 +270,66 @@ def main(data, comp_flag, rem_flag, quad_flag, out_flag, code_lng, num_surv, fil
         # # to save conda activate base
         # fig.write_image("outliers.png", width=3300, height=350, scale=2)
 
+    if clu_flag:
+        from sklearn.manifold import MDS
+        from sklearn.decomposition import PCA
+        import umap
+        import matplotlib.pyplot as plt
+        from mpl_toolkits.mplot3d import Axes3D
+        
+        df = pd.DataFrame(index=quad_enc.keys())
+        # pdb.set_trace()
+        # for idx, song in enumerate(list_songs):
+        #     cols = [song + ':{}'.format(_) for _ in emo_enc.keys()]
+
+        #     df[data.filter(cols).columns] = data.filter(cols)
+        # pdb.set_trace()
+
+        ## cluster per song or per quadrant???
+        for key, list_emo in quad_enc.items():
+            cols = ['{}_{}:{}'.format(x, y, z) for x in list_emo for y in range(1, 3) for z in range(1, 12)]
+            for emo in list_emo:
+                for exc in range(1, 3):
+                    name_exc = '{}_{}'.format(emo, exc)
+                    cols = ['{}:{}'.format(name_exc, _) for _ in range(1, 12)]
+                    pdb.set_trace()
+            df = data.reset_index().filter(cols)
+            # pdb.set_trace()
+
+        pdb.set_trace()
+
+        ## todo: what to do with nans??
+        # if filter:
+        #     df.dropna()
+        #     pdb.set_trace()
+
+        n_dims = 3
+        # # multidimensional scaling
+        # embedding = MDS(n_components=n_dims, random_state=1987)
+        # principal component analysis
+        # embedding = PCA(n_components=n_dims, random_state=1987)
+        # umap
+        embedding = umap.UMAP(n_components=n_dims, min_dist=0.0, random_state=1987)
+
+        # fit transforms
+        X_t = embedding.fit_transform(df)
+        # print(X_t.shape)
+        init = 0 
+        if n_dims == 3:
+            fig = plt.figure()
+            ax = fig.add_subplot(111, projection='3d')
+        for i in langs:
+            # print(i, init)
+            num_surv = df.loc[i].shape[0]
+            if n_dims == 3:
+                ax.scatter(xs=X_t[init:init + num_surv, 0], ys=X_t[init:init + num_surv, 1], zs=X_t[init:init + num_surv, 2], label=i)
+            else:
+                plt.scatter(X_t[init:init + num_surv, 0], X_t[init:init + num_surv, 1], label=i)
+            init += num_surv
+        plt.legend()
+        plt.show()
+
+
     # print demographics
     # calculate demographics after filters
     print('AGE: mean - {:.2f}, std - {:.2f}'.format(mean_raters['demographics1:3'], std_raters['demographics1:3']))
@@ -310,10 +373,6 @@ def main(data, comp_flag, rem_flag, quad_flag, out_flag, code_lng, num_surv, fil
         print_results(dict_emo_mean, dict_emo_std, dict_emo_agree, pretty_print)
 
 
-
-
-
-
 if __name__ == "__main__":
     # usage python3 process_data.py -l [e/s/m/g] -c [y/n] -r [y/n] -n [integer] -f [p1,p2,f1,f2,u1,u2]
     parser = argparse.ArgumentParser()
@@ -353,6 +412,10 @@ if __name__ == "__main__":
     parser.add_argument('-o',
                         '--outlier',
                         help='Analyze outliers [y] or not [n]',
+                        action='store')
+    parser.add_argument('-clu',
+                        '--cluster',
+                        help='Analyze clustering [y] or not [n]',
                         action='store')
     args = parser.parse_args()
 
@@ -410,9 +473,13 @@ if __name__ == "__main__":
 
     if args.outlier == 'y':
         box_out = True
-    elif args.outlier == 'n':
+    else:
         box_out = False
 
+    if args.cluster == 'y':
+        clu_flag = True
+    else:
+        clu_flag = False
 
     # file selection
     if args.language == 'e' or args.language == 'english':
@@ -462,4 +529,4 @@ if __name__ == "__main__":
                     code_lng.append(lang_name)
                     data.append(row)
 
-    main(data, comp_flag, rem_flag, quad_flag, box_out, code_lng, num_to_proc, args.filter, args.lang_filter)
+    main(data, comp_flag, rem_flag, quad_flag, box_out, clu_flag, code_lng, num_to_proc, args.filter, args.lang_filter)
