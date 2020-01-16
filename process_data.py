@@ -277,7 +277,9 @@ def main(data, comp_flag, rem_flag, quad_flag, out_flag, clu_flag, code_lng, num
         import matplotlib.pyplot as plt
         from mpl_toolkits.mplot3d import Axes3D
         
-        df = pd.DataFrame(index=quad_enc.keys())
+        # df = pd.DataFrame(index=quad_enc.keys())
+        data = data.reindex(data.index.rename(['language']))
+
         # pdb.set_trace()
         # for idx, song in enumerate(list_songs):
         #     cols = [song + ':{}'.format(_) for _ in emo_enc.keys()]
@@ -292,9 +294,12 @@ def main(data, comp_flag, rem_flag, quad_flag, out_flag, clu_flag, code_lng, num
                 for exc in range(1, 3):
                     name_exc = '{}_{}'.format(emo, exc)
                     cols = ['{}:{}'.format(name_exc, _) for _ in range(1, 12)]
+                    df = data.filter(cols)
+                    df['excerpt'] = name_exc
+                    df['emotion'] = emo
+                    df['quadrant'] = key
+                    df.rename(columns=dict(zip(cols, emo_enc.values())))
                     pdb.set_trace()
-            df = data.reset_index().filter(cols)
-            # pdb.set_trace()
 
         pdb.set_trace()
 
