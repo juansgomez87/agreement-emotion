@@ -97,73 +97,103 @@ def select_filter(filter):
     return sel_preferred_songs, sel_familiar_songs, sel_understood_songs
 
 
-def make_cluster_plots(n_dims, all_df, clus_list, column, X_t, idx_t, grey_rows):
+def make_cluster_plots(n_dims, all_df, clus_list, column, X_t, idx_t, grey_rows, filter, title):
     import matplotlib.pyplot as plt
     from mpl_toolkits.mplot3d import Axes3D
 
-    if n_dims == 3:
-        fig = plt.figure()
-        ax1 = fig.add_subplot(221, projection='3d')
-        ax2 = fig.add_subplot(222, projection='3d')
-        ax3 = fig.add_subplot(223, projection='3d')
-    for i in clus_list:
-        tmp = all_df.reset_index()
-        idx = tmp[tmp[column] == i].index
-        inters = set(idx) & set(grey_rows)
-        idx_col = list(set(idx) - inters)
-        idx_grey = list(inters)
+    if filter:
+        if n_dims == 3:
+            fig = plt.figure()
+            ax1 = fig.add_subplot(221, projection='3d')
+            ax2 = fig.add_subplot(222, projection='3d')
+            ax3 = fig.add_subplot(223, projection='3d')
+        for i in clus_list:
+            tmp = all_df.reset_index()
+            idx = tmp[tmp[column] == i].index
+            inters = set(idx) & set(grey_rows)
+            idx_col = list(set(idx) - inters)
+            idx_grey = list(inters)
 
-        if n_dims == 3: 
-            ax1.scatter(xs=X_t[idx, 0],
-                       ys=X_t[idx, 1],
-                       zs=X_t[idx, 2],
-                       label=i,
-                       alpha=0.6)
-            ax1.legend()
-            ax2.scatter(xs=X_t[idx_col, 0],
-                       ys=X_t[idx_col, 1],
-                       zs=X_t[idx_col, 2],
-                       label=i,
-                       alpha=0.6)
-            ax2.legend()
-            ax2.scatter(xs=X_t[idx_grey, 0],
-                       ys=X_t[idx_grey, 1],
-                       zs=X_t[idx_grey, 2],
-                       label=i,
-                       c='grey',
-                       alpha=0.6)
-            ax2.legend()
-            ax3.scatter(xs=X_t[idx_col, 0],
-                       ys=X_t[idx_col, 1],
-                       zs=X_t[idx_col, 2],
-                       label=i,
-                       alpha=0.6)
-            ax3.legend()
-        else:
-            plt.subplot(311)
-            plt.scatter(X_t[idx, 0],
-                        X_t[idx, 1],
-                        label=i,
-                        alpha=0.6)
-            plt.legend()
-            plt.subplot(312)
-            plt.scatter(X_t[idx_col, 0],
-                        X_t[idx_col, 1],
-                        label=i,
-                        alpha=0.6)
-            plt.scatter(X_t[idx_grey, 0],
-                        X_t[idx_grey, 1],
-                        label=i,
-                        c='grey',
-                        alpha=0.6)
-            plt.legend()
-            plt.subplot(313)
-            plt.scatter(X_t[idx_col, 0],
-                        X_t[idx_col, 1],
-                        label=i,
-                        alpha=0.6)
-            plt.legend()
-    plt.show()
+            if n_dims == 3: 
+                ax1.scatter(xs=X_t[idx, 0],
+                           ys=X_t[idx, 1],
+                           zs=X_t[idx, 2],
+                           label=i,
+                           alpha=0.6)
+                ax1.set_title('Dim. red.: {}'.format(title))
+                ax1.legend()
+                ax2.scatter(xs=X_t[idx_col, 0],
+                           ys=X_t[idx_col, 1],
+                           zs=X_t[idx_col, 2],
+                           label=i,
+                           alpha=0.6)
+                ax2.legend()
+                ax2.scatter(xs=X_t[idx_grey, 0],
+                           ys=X_t[idx_grey, 1],
+                           zs=X_t[idx_grey, 2],
+                           label=i,
+                           c='grey',
+                           alpha=0.6)
+                ax2.set_title('Dim. red.: {} + filt: {}'.format(title, filter))
+                ax2.legend()
+                ax3.scatter(xs=X_t[idx_col, 0],
+                           ys=X_t[idx_col, 1],
+                           zs=X_t[idx_col, 2],
+                           label=i,
+                           alpha=0.6)
+                ax3.set_title('Dim. red.: {} removed filt'.format(title))
+                ax3.legend()
+            else:
+                plt.subplot(221)
+                plt.scatter(X_t[idx, 0],
+                            X_t[idx, 1],
+                            label=i,
+                            alpha=0.6)
+                plt.title('Dim. red.: {}'.format(title))
+                plt.legend()
+                plt.subplot(222)
+                plt.scatter(X_t[idx_col, 0],
+                            X_t[idx_col, 1],
+                            label=i,
+                            alpha=0.6)
+                plt.scatter(X_t[idx_grey, 0],
+                            X_t[idx_grey, 1],
+                            label=i,
+                            c='grey',
+                            alpha=0.6)
+                plt.title('Dim. red.: {} + filt: {}'.format(title, filter))
+                plt.legend()
+                plt.subplot(223)
+                plt.scatter(X_t[idx_col, 0],
+                            X_t[idx_col, 1],
+                            label=i,
+                            alpha=0.6)
+                plt.title('Dim. red.: {} removed filt'.format(title))
+                plt.legend()
+        plt.show()
+    else:
+        if n_dims == 3:
+            fig = plt.figure()
+            ax1 = fig.add_subplot(111, projection='3d')
+        for i in clus_list:
+            tmp = all_df.reset_index()
+            idx = tmp[tmp[column] == i].index
+            if n_dims == 3: 
+                ax1.scatter(xs=X_t[idx, 0],
+                           ys=X_t[idx, 1],
+                           zs=X_t[idx, 2],
+                           label=i,
+                           alpha=0.6)
+                ax1.set_title('Dim. red.: {}'.format(title))
+                ax1.legend()
+            else:
+                plt.scatter(X_t[idx, 0],
+                            X_t[idx, 1],
+                            label=i,
+                            alpha=0.6)
+                plt.title('Dim. red.: {}'.format(title))
+                plt.legend()
+        plt.show()
 
 
 
@@ -356,10 +386,10 @@ def main(data, comp_flag, rem_flag, quad_flag, out_flag, clu_flag, code_lng, num
         import umap
         
         # parameters to be set
-        n_dims = 3  # 2 or 3 components for dimensionality reduction
-        analysis = 'umap'  # 'mds', 'pca', 'tsne', 'umap'
+        n_dims = 2  # 2 or 3 components for dimensionality reduction
+        analysis = 'tsne'  # 'mds', 'pca', 'tsne', 'umap'
         clustering = 'quadrant'  # 'language', 'emotion', 'quadrant'
-        save = True  # save data to csv
+        save = False  # save data to csv
 
         data = full_data.reindex(full_data.index.rename(['language']))
         filt_data = filt_data.reindex(filt_data.index.rename(['language']))
@@ -388,6 +418,7 @@ def main(data, comp_flag, rem_flag, quad_flag, out_flag, clu_flag, code_lng, num
                     all_idx = all_idx.append(idx_df, ignore_index=True)
 
         if save:
+            # save output for SPSS
             if filter:
                 filename = 'results/data_ratings.{}.csv'.format(filter)
             else:
@@ -397,7 +428,7 @@ def main(data, comp_flag, rem_flag, quad_flag, out_flag, clu_flag, code_lng, num
         # select embedding analysis
         if analysis == 'mds':
             # multidimensional scaling
-            embedding = MDS(n_components=n_dims, random_state=1987, verbose=2)
+            embedding = MDS(n_components=n_dims, random_state=1987, verbose=1)
         elif analysis == 'pca':
             # principal component analysis
             embedding = PCA(n_components=n_dims, random_state=1987)
@@ -405,6 +436,7 @@ def main(data, comp_flag, rem_flag, quad_flag, out_flag, clu_flag, code_lng, num
             # t-distributed stochastic neighbor embedding
             embedding = TSNE(n_components=n_dims,
                              random_state=1987,
+                             init='pca',
                              verbose=True)
         elif analysis == 'umap':
             # umap
@@ -435,7 +467,7 @@ def main(data, comp_flag, rem_flag, quad_flag, out_flag, clu_flag, code_lng, num
             print('Cluster type not selected!')
             sys.exit(0)
 
-        make_cluster_plots(n_dims, all_df, clus_list, column, X_t, idx_t, grey_rows)
+        make_cluster_plots(n_dims, all_df, clus_list, column, X_t, idx_t, grey_rows, filter, analysis)
 
 
     # print demographics
