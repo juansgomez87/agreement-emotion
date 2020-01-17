@@ -1,4 +1,3 @@
-
 import numpy as np
 import pandas as pd
 import csv
@@ -98,6 +97,76 @@ def select_filter(filter):
     return sel_preferred_songs, sel_familiar_songs, sel_understood_songs
 
 
+def make_cluster_plots(n_dims, all_df, clus_list, column, X_t, idx_t, grey_rows):
+    import matplotlib.pyplot as plt
+    from mpl_toolkits.mplot3d import Axes3D
+
+    if n_dims == 3:
+        fig = plt.figure()
+        ax1 = fig.add_subplot(221, projection='3d')
+        ax2 = fig.add_subplot(222, projection='3d')
+        ax3 = fig.add_subplot(223, projection='3d')
+    for i in clus_list:
+        tmp = all_df.reset_index()
+        idx = tmp[tmp[column] == i].index
+        inters = set(idx) & set(grey_rows)
+        idx_col = list(set(idx) - inters)
+        idx_grey = list(inters)
+
+        if n_dims == 3: 
+            ax1.scatter(xs=X_t[idx, 0],
+                       ys=X_t[idx, 1],
+                       zs=X_t[idx, 2],
+                       label=i,
+                       alpha=0.6)
+            ax1.legend()
+            ax2.scatter(xs=X_t[idx_col, 0],
+                       ys=X_t[idx_col, 1],
+                       zs=X_t[idx_col, 2],
+                       label=i,
+                       alpha=0.6)
+            ax2.legend()
+            ax2.scatter(xs=X_t[idx_grey, 0],
+                       ys=X_t[idx_grey, 1],
+                       zs=X_t[idx_grey, 2],
+                       label=i,
+                       c='grey',
+                       alpha=0.6)
+            ax2.legend()
+            ax3.scatter(xs=X_t[idx_col, 0],
+                       ys=X_t[idx_col, 1],
+                       zs=X_t[idx_col, 2],
+                       label=i,
+                       alpha=0.6)
+            ax3.legend()
+        else:
+            plt.subplot(311)
+            plt.scatter(X_t[idx, 0],
+                        X_t[idx, 1],
+                        label=i,
+                        alpha=0.6)
+            plt.legend()
+            plt.subplot(312)
+            plt.scatter(X_t[idx_col, 0],
+                        X_t[idx_col, 1],
+                        label=i,
+                        alpha=0.6)
+            plt.scatter(X_t[idx_grey, 0],
+                        X_t[idx_grey, 1],
+                        label=i,
+                        c='grey',
+                        alpha=0.6)
+            plt.legend()
+            plt.subplot(313)
+            plt.scatter(X_t[idx_col, 0],
+                        X_t[idx_col, 1],
+                        label=i,
+                        alpha=0.6)
+            plt.legend()
+    plt.show()
+
+
+
 def main(data, comp_flag, rem_flag, quad_flag, out_flag, clu_flag, code_lng, num_surv, filter, lang_filter):
     """
 
@@ -124,7 +193,6 @@ def main(data, comp_flag, rem_flag, quad_flag, out_flag, clu_flag, code_lng, num
     list_eng = [_ for _ in list_songs if _ not in list_non_eng]
     # select songs depending on lyrics to process
     if lang_filter == 'all':
-        pass
         txt_lyrics = 'with lyrics in all languages'
     elif lang_filter == 'inst':
         list_songs = list_inst
@@ -170,6 +238,7 @@ def main(data, comp_flag, rem_flag, quad_flag, out_flag, clu_flag, code_lng, num
             # option 2 (sample num_surv from all surveys)
             data = data.sample(n=num_surv)
 
+    full_data = data.copy()
     # sample by preference
     idx_smp = 12
     data, txt_pref, cnt_pref = filter_samples(data, emo_enc, sel_enc, list_songs, idx_smp, sel_preferred_songs)
@@ -179,6 +248,8 @@ def main(data, comp_flag, rem_flag, quad_flag, out_flag, clu_flag, code_lng, num
     # sample by understood_songs
     idx_smp = 14
     data, txt_und, cnt_und = filter_samples(data, emo_enc, sel_enc, list_songs, idx_smp, sel_understood_songs)
+    
+
     # sample listeners by music sophistication
     # as reported by Mullensiefen et al.
     all_raters = data.shape[0]
@@ -188,27 +259,36 @@ def main(data, comp_flag, rem_flag, quad_flag, out_flag, clu_flag, code_lng, num
     txt_soph = 'music sophistication (all - positive (>mean) and negative(<mean))\n'
     if filter == 'fm1':
         txt_soph = 'F3 - Musical training (positive (>mean))\n'
-        data = data[data['mus_trai:1'] > mean_mt]
+        df = data[data['mus_trai:1'] > mean_mt]
+        data[data['mus_trai:1'] < mean_mt] = np.nan
     elif filter == 'fm2':
         txt_soph = 'F3 - Musical training (negative (>mean))\n'
-        data = data[data['mus_trai:1'] < mean_mt]
+        df = data[data['mus_trai:1'] < mean_mt]
+        data[data['mus_trai:1'] > mean_mt] = np.nan
     elif filter == 'fe1':
         txt_soph = 'F4 - Emotions (positive (>mean))\n'
-        data = data[data['emo:1'] > mean_emo]
+        df = data[data['emo:1'] > mean_emo]
+        data[data['emo:1'] < mean_emo] = np.nan
     elif filter == 'fe2':
         txt_soph = 'F4 - Emotions (negative (>mean))\n'
-        data = data[data['emo:1'] < mean_emo]
+        df = data[data['emo:1'] < mean_emo]
+        data[data['emo:1'] > mean_emo] = np.nan
     elif filter == 'fs1':
         txt_soph = 'F6 - General sophistication (positive (>mean))\n'
-        data = data[data['mus_soph:1'] > mean_soph]
+        df = data[data['mus_soph:1'] > mean_soph]
+        data[data['mus_soph:1'] < mean_soph] = np.nan
     elif filter == 'fs2':
         txt_soph = 'F6 - General sophistication(negative (>mean))\n'
-        data = data[data['mus_soph:1'] < mean_soph]
+        df = data[data['mus_soph:1'] < mean_soph]
+        data[data['mus_soph:1'] > mean_soph] = np.nan
     if filter == 'fm1' or filter == 'fm2' or filter == 'fe1' or filter == 'fe2' or filter == 'fs1' or filter == 'fms2':
-        cnt_soph = data.shape[0] * len(emo_enc) * len(list_songs)
+        cnt_soph = df.shape[0] * len(emo_enc) * len(list_songs)
     else:
         cnt_soph = 0
-    
+
+    # save data with NaNs
+    filt_data = data.copy()
+
     txt_to_print = txt_pref + txt_fam + txt_und + txt_soph
     tot_cnt = cnt_pref + cnt_fam + cnt_und + cnt_soph
     tot_rat = all_raters * len(emo_enc) * len(list_songs)
@@ -259,7 +339,7 @@ def main(data, comp_flag, rem_flag, quad_flag, out_flag, clu_flag, code_lng, num
                 # # uncomment for debugging
                 # print('Excerpt {}, from {} subjects, outliers {}'.format(col, num_subj, num_out))
                 fig.add_trace(go.Box(y=df[col], name=lab, boxpoints='outliers', boxmean=True), row=1, col=idx+1)
-        out_matrix = np.reshape(out_matrix, (out_matrix.shape[0], out_matrix.shape[1]*out_matrix.shape[2]))
+        out_matrix = np.reshape(out_matrix, (out_matrix.shape[0], out_matrix.shape[1] * out_matrix.shape[2]))
         cnt_out = np.sum(out_matrix, axis=1)
         print('User {} was the most outlier with {} ratings out of {} possibilities ({})'.format(np.argmax(cnt_out),
                                                                                                  np.max(cnt_out),
@@ -271,23 +351,23 @@ def main(data, comp_flag, rem_flag, quad_flag, out_flag, clu_flag, code_lng, num
         # fig.write_image("outliers.png", width=3300, height=350, scale=2)
 
     if clu_flag:
-        from sklearn.manifold import MDS
+        from sklearn.manifold import MDS, TSNE
         from sklearn.decomposition import PCA
         import umap
-        import matplotlib.pyplot as plt
-        from mpl_toolkits.mplot3d import Axes3D
         
-        # df = pd.DataFrame(index=quad_enc.keys())
-        data = data.reindex(data.index.rename(['language']))
+        # parameters to be set
+        n_dims = 3  # 2 or 3 components for dimensionality reduction
+        analysis = 'umap'  # 'mds', 'pca', 'tsne', 'umap'
+        clustering = 'quadrant'  # 'language', 'emotion', 'quadrant'
+        save = True  # save data to csv
 
-        # pdb.set_trace()
-        # for idx, song in enumerate(list_songs):
-        #     cols = [song + ':{}'.format(_) for _ in emo_enc.keys()]
+        data = full_data.reindex(full_data.index.rename(['language']))
+        filt_data = filt_data.reindex(filt_data.index.rename(['language']))
+        idx_nan = filt_data != data
 
-        #     df[data.filter(cols).columns] = data.filter(cols)
-        # pdb.set_trace()
+        all_df = pd.DataFrame()
+        all_idx = pd.DataFrame()
 
-        ## cluster per song or per quadrant???
         for key, list_emo in quad_enc.items():
             cols = ['{}_{}:{}'.format(x, y, z) for x in list_emo for y in range(1, 3) for z in range(1, 12)]
             for emo in list_emo:
@@ -295,44 +375,67 @@ def main(data, comp_flag, rem_flag, quad_flag, out_flag, clu_flag, code_lng, num
                     name_exc = '{}_{}'.format(emo, exc)
                     cols = ['{}:{}'.format(name_exc, _) for _ in range(1, 12)]
                     df = data.filter(cols)
-                    df['excerpt'] = name_exc
-                    df['emotion'] = emo
-                    df['quadrant'] = key
-                    df.rename(columns=dict(zip(cols, emo_enc.values())))
-                    pdb.set_trace()
+                    idx_df = idx_nan.filter(cols)
+                    df['excerpt'] = idx_df['excerpt'] = name_exc
+                    df['emotion'] = idx_df['emotion'] = emo
+                    df['quadrant'] = idx_df['quadrant'] = key
+                    df = df.rename(columns=dict(zip(cols, emo_enc.values()))).reset_index()
+                    idx_df = idx_df.rename(columns=dict(zip(cols, emo_enc.values()))).reset_index()
+                    df = df.reset_index().rename(columns={'index': 'user'})
+                    idx_df = idx_df.reset_index().rename(columns={'index': 'user'})
+                    # final shape of data and nan-indices
+                    all_df = all_df.append(df, ignore_index=True)
+                    all_idx = all_idx.append(idx_df, ignore_index=True)
 
-        pdb.set_trace()
+        if save:
+            if filter:
+                filename = 'results/data_ratings.{}.csv'.format(filter)
+            else:
+                filename = 'results/data_ratings.all.csv'
+            all_df.to_csv(filename)
 
-        ## todo: what to do with nans??
-        # if filter:
-        #     df.dropna()
-        #     pdb.set_trace()
-
-        n_dims = 3
-        # # multidimensional scaling
-        # embedding = MDS(n_components=n_dims, random_state=1987)
-        # principal component analysis
-        # embedding = PCA(n_components=n_dims, random_state=1987)
-        # umap
-        embedding = umap.UMAP(n_components=n_dims, min_dist=0.0, random_state=1987)
+        # select embedding analysis
+        if analysis == 'mds':
+            # multidimensional scaling
+            embedding = MDS(n_components=n_dims, random_state=1987, verbose=2)
+        elif analysis == 'pca':
+            # principal component analysis
+            embedding = PCA(n_components=n_dims, random_state=1987)
+        elif analysis == 'tsne':
+            # t-distributed stochastic neighbor embedding
+            embedding = TSNE(n_components=n_dims,
+                             random_state=1987,
+                             verbose=True)
+        elif analysis == 'umap':
+            # umap
+            embedding = umap.UMAP(n_components=n_dims,
+                                  min_dist=0.0,
+                                  n_neighbors=30,
+                                  random_state=1987,
+                                  verbose=True)
+        else:
+            print('Analysis not selected!')
+            sys.exit(0)
 
         # fit transforms
-        X_t = embedding.fit_transform(df)
-        # print(X_t.shape)
-        init = 0 
-        if n_dims == 3:
-            fig = plt.figure()
-            ax = fig.add_subplot(111, projection='3d')
-        for i in langs:
-            # print(i, init)
-            num_surv = df.loc[i].shape[0]
-            if n_dims == 3:
-                ax.scatter(xs=X_t[init:init + num_surv, 0], ys=X_t[init:init + num_surv, 1], zs=X_t[init:init + num_surv, 2], label=i)
-            else:
-                plt.scatter(X_t[init:init + num_surv, 0], X_t[init:init + num_surv, 1], label=i)
-            init += num_surv
-        plt.legend()
-        plt.show()
+        X_t = embedding.fit_transform(all_df[[_ for _ in emo_enc.values()]])
+        idx_t = all_idx[[_ for _ in emo_enc.values()]]
+        grey_rows = np.where(np.prod(idx_t, axis=1) == True)[0]
+
+        if clustering == 'language':
+            clus_list = langs
+            column = 'language'
+        elif clustering == 'emotion':
+            clus_list = [_ for _ in emo_enc.values()]
+            column = 'emotion'
+        elif clustering == 'quadrant':
+            clus_list = [_ for _ in quad_enc.keys()]
+            column = 'quadrant'
+        else:
+            print('Cluster type not selected!')
+            sys.exit(0)
+
+        make_cluster_plots(n_dims, all_df, clus_list, column, X_t, idx_t, grey_rows)
 
 
     # print demographics
