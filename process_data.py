@@ -97,105 +97,201 @@ def select_filter(filter):
     return sel_preferred_songs, sel_familiar_songs, sel_understood_songs
 
 
-def make_cluster_plots(n_dims, all_df, clus_list, column, X_t, idx_t, grey_rows, filter, title):
+def make_cluster_plots(n_dims, all_df, clus_list, column, X_t, idx_t, grey_rows, filter, title, kmeans_labels, kmeans_labels_filt):
     import matplotlib.pyplot as plt
     from mpl_toolkits.mplot3d import Axes3D
-
+    from matplotlib.ticker import NullFormatter
+    # plotting with filters
     if filter:
+        fig = plt.figure()
+        idx_all_col = list()
         if n_dims == 3:
-            fig = plt.figure()
             ax1 = fig.add_subplot(221, projection='3d')
             ax2 = fig.add_subplot(222, projection='3d')
             ax3 = fig.add_subplot(223, projection='3d')
+            ax4 = fig.add_subplot(223, projection='3d')
+        else:
+            ax1 = fig.add_subplot(221)
+            ax2 = fig.add_subplot(222)
+            ax3 = fig.add_subplot(223)
+            ax4 = fig.add_subplot(224)
         for i in clus_list:
             tmp = all_df.reset_index()
             idx = tmp[tmp[column] == i].index
             inters = set(idx) & set(grey_rows)
             idx_col = list(set(idx) - inters)
             idx_grey = list(inters)
-
-            if n_dims == 3: 
+            
+            if n_dims == 3:
                 ax1.scatter(xs=X_t[idx, 0],
-                           ys=X_t[idx, 1],
-                           zs=X_t[idx, 2],
-                           label=i,
-                           alpha=0.6)
-                ax1.set_title('Dim. red.: {}'.format(title))
+                            ys=X_t[idx, 1],
+                            zs=X_t[idx, 2],
+                            label=i,
+                            alpha=0.6,
+                            s=4)
+                ax1.set_title('Manifold: {}'.format(title))
                 ax1.legend()
+                ax1.xaxis.set_major_formatter(NullFormatter())
+                ax1.yaxis.set_major_formatter(NullFormatter())
+                ax1.zaxis.set_major_formatter(NullFormatter())
+
                 ax2.scatter(xs=X_t[idx_col, 0],
-                           ys=X_t[idx_col, 1],
-                           zs=X_t[idx_col, 2],
-                           label=i,
-                           alpha=0.6)
+                            ys=X_t[idx_col, 1],
+                            zs=X_t[idx_col, 2],
+                            label=i,
+                            alpha=0.6,
+                            s=4)
                 ax2.legend()
                 ax2.scatter(xs=X_t[idx_grey, 0],
-                           ys=X_t[idx_grey, 1],
-                           zs=X_t[idx_grey, 2],
-                           label=i,
-                           c='grey',
-                           alpha=0.6)
-                ax2.set_title('Dim. red.: {} + filt: {}'.format(title, filter))
+                            ys=X_t[idx_grey, 1],
+                            zs=X_t[idx_grey, 2],
+                            label=i,
+                            c='grey',
+                            alpha=0.6,
+                            s=10)
+                ax2.set_title('Manifold: {} + filt: {}'.format(title, filter))
                 ax2.legend()
+                ax2.xaxis.set_major_formatter(NullFormatter())
+                ax2.yaxis.set_major_formatter(NullFormatter())
+                ax2.zaxis.set_major_formatter(NullFormatter())
                 ax3.scatter(xs=X_t[idx_col, 0],
-                           ys=X_t[idx_col, 1],
-                           zs=X_t[idx_col, 2],
-                           label=i,
-                           alpha=0.6)
-                ax3.set_title('Dim. red.: {} removed filt'.format(title))
+                            ys=X_t[idx_col, 1],
+                            zs=X_t[idx_col, 2],
+                            label=i,
+                            alpha=0.6,
+                            s=4)
+                ax3.set_title('Manifold: {} removed filt'.format(title))
                 ax3.legend()
+                ax3.xaxis.set_major_formatter(NullFormatter())
+                ax3.yaxis.set_major_formatter(NullFormatter())
+                ax3.zaxis.set_major_formatter(NullFormatter())
+                idx_all_col.append(idx_col)
             else:
-                plt.subplot(221)
-                plt.scatter(X_t[idx, 0],
+                ax1.scatter(X_t[idx, 0],
                             X_t[idx, 1],
                             label=i,
-                            alpha=0.6)
-                plt.title('Dim. red.: {}'.format(title))
-                plt.legend()
-                plt.subplot(222)
-                plt.scatter(X_t[idx_col, 0],
+                            alpha=0.6,
+                            s=4)
+                ax1.set_title('Manifold: {}'.format(title))
+                ax1.legend()
+                ax1.xaxis.set_major_formatter(NullFormatter())
+                ax1.yaxis.set_major_formatter(NullFormatter())
+                ax1.axis('equal')
+                ax2.scatter(X_t[idx_col, 0],
                             X_t[idx_col, 1],
                             label=i,
-                            alpha=0.6)
-                plt.scatter(X_t[idx_grey, 0],
+                            alpha=0.6,
+                            s=4)
+                ax2.scatter(X_t[idx_grey, 0],
                             X_t[idx_grey, 1],
                             label=i,
                             c='grey',
-                            alpha=0.6)
-                plt.title('Dim. red.: {} + filt: {}'.format(title, filter))
-                plt.legend()
-                plt.subplot(223)
-                plt.scatter(X_t[idx_col, 0],
+                            marker='x',
+                            alpha=0.6,
+                            s=4)
+                ax2.set_title('Manifold: {} + filt: {}'.format(title, filter))
+                ax2.legend()
+                ax2.xaxis.set_major_formatter(NullFormatter())
+                ax2.yaxis.set_major_formatter(NullFormatter())
+                ax2.axis('equal')
+                ax3.scatter(X_t[idx_col, 0],
                             X_t[idx_col, 1],
                             label=i,
-                            alpha=0.6)
-                plt.title('Dim. red.: {} removed filt'.format(title))
-                plt.legend()
-        plt.show()
-    else:
+                            alpha=0.6,
+                            s=4)
+                ax3.set_title('Manifold: {} removed filt'.format(title))
+                ax3.legend()
+                ax3.xaxis.set_major_formatter(NullFormatter())
+                ax3.yaxis.set_major_formatter(NullFormatter())
+                ax3.axis('equal')
+                idx_all_col.append(idx_col)
         if n_dims == 3:
-            fig = plt.figure()
-            ax1 = fig.add_subplot(111, projection='3d')
+            # TODO implement!
+            pass
+        else:
+            idx_all_col = [x for y in idx_all_col for x in y]
+            ax4.scatter(X_t[idx_all_col, 0],
+                        X_t[idx_all_col, 1],
+                        alpha=0.6,
+                        s=4,
+                        c=kmeans_labels_filt)
+            ax4.set_title('K-Means Clustering')
+            ax4.xaxis.set_major_formatter(NullFormatter())
+            ax4.yaxis.set_major_formatter(NullFormatter())
+            ax4.axis('equal')
+        plt.show()
+    # plotting with no filters, only plot original data and k-mean clusters
+    else:
+        fig = plt.figure()
+        if n_dims == 3:
+            ax1 = fig.add_subplot(121, projection='3d')
+            ax2 = fig.add_subplot(122, projection='3d')
+        else:
+            ax1 = fig.add_subplot(121)
+            ax2 = fig.add_subplot(122)
         for i in clus_list:
             tmp = all_df.reset_index()
             idx = tmp[tmp[column] == i].index
             if n_dims == 3: 
                 ax1.scatter(xs=X_t[idx, 0],
-                           ys=X_t[idx, 1],
-                           zs=X_t[idx, 2],
-                           label=i,
-                           alpha=0.6)
-                ax1.set_title('Dim. red.: {}'.format(title))
+                            ys=X_t[idx, 1],
+                            zs=X_t[idx, 2],
+                            label=i,
+                            alpha=0.6,
+                            s=4)
+                ax1.set_title('Manifold: {}'.format(title))
+                ax1.xaxis.set_major_formatter(NullFormatter())
+                ax1.yaxis.set_major_formatter(NullFormatter())
+                ax1.zaxis.set_major_formatter(NullFormatter())
                 ax1.legend()
             else:
-                plt.scatter(X_t[idx, 0],
+                ax1.scatter(X_t[idx, 0],
                             X_t[idx, 1],
                             label=i,
-                            alpha=0.6)
-                plt.title('Dim. red.: {}'.format(title))
-                plt.legend()
+                            alpha=0.6,
+                            s=4)
+                ax1.set_title('Manifold: {}'.format(title))
+                ax1.xaxis.set_major_formatter(NullFormatter())
+                ax1.yaxis.set_major_formatter(NullFormatter())
+                ax1.axis('equal')
+                ax1.legend()
+        # add clustering results
+        if n_dims == 3:
+            ax2.scatter(xs=X_t[:, 0],
+                        ys=X_t[:, 1],
+                        zs=X_t[:, 2],
+                        alpha=0.6,
+                        s=4,
+                        c=kmeans_labels)
+            ax2.set_title('K-Means Clustering')
+            ax2.xaxis.set_major_formatter(NullFormatter())
+            ax2.yaxis.set_major_formatter(NullFormatter())
+            ax2.zaxis.set_major_formatter(NullFormatter())
+        else:
+            ax2.scatter(X_t[:, 0],
+                        X_t[:, 1],
+                        alpha=0.6,
+                        s=4,
+                        c=kmeans_labels)
+            ax2.set_title('K-Means Clustering')
+            ax2.xaxis.set_major_formatter(NullFormatter())
+            ax2.yaxis.set_major_formatter(NullFormatter())
+            ax2.axis('equal')
         plt.show()
 
 
+def print_cluster_stats(labels, labels_filt, kmeans_labels, kmeans_labels_filt):
+    from sklearn import metrics
+    rand_all = metrics.adjusted_rand_score(labels, kmeans_labels)
+    mutual_all = metrics.adjusted_mutual_info_score(labels, kmeans_labels)
+
+    if labels_filt is not None and kmeans_labels_filt is not None:
+        rand_filt = metrics.adjusted_rand_score(labels_filt, kmeans_labels_filt)
+        mutual_filt = metrics.adjusted_mutual_info_score(labels_filt, kmeans_labels_filt)
+    print('**********************')
+    print('Rand score all data: {}, Rand score with filter: {}'.format(rand_all, rand_filt))
+    print('Mutual info score all data: {}, Mutual info score with filter: {}'.format(mutual_all, mutual_filt))
+    print('**********************')
 
 def main(data, comp_flag, rem_flag, quad_flag, out_flag, clu_flag, code_lng, num_surv, filter, lang_filter):
     """
@@ -383,12 +479,14 @@ def main(data, comp_flag, rem_flag, quad_flag, out_flag, clu_flag, code_lng, num
     if clu_flag:
         from sklearn.manifold import MDS, TSNE
         from sklearn.decomposition import PCA
+        from sklearn.preprocessing import LabelEncoder
+        import sklearn.cluster as cluster
         import umap
         
         # parameters to be set
         n_dims = 2  # 2 or 3 components for dimensionality reduction
-        analysis = 'tsne'  # 'mds', 'pca', 'tsne', 'umap'
-        clustering = 'quadrant'  # 'language', 'emotion', 'quadrant'
+        analysis = 'mds'  # 'mds', 'pca', 'tsne', 'umap'
+        cluster_by = 'quadrant'  # 'language', 'emotion', 'quadrant'
         save = False  # save data to csv
 
         data = full_data.reindex(full_data.index.rename(['language']))
@@ -418,7 +516,7 @@ def main(data, comp_flag, rem_flag, quad_flag, out_flag, clu_flag, code_lng, num
                     all_idx = all_idx.append(idx_df, ignore_index=True)
 
         if save:
-            # save output for SPSS
+            # save output for general lineal model analysis
             if filter:
                 filename = 'results/data_ratings.{}.csv'.format(filter)
             else:
@@ -453,22 +551,34 @@ def main(data, comp_flag, rem_flag, quad_flag, out_flag, clu_flag, code_lng, num
         X_t = embedding.fit_transform(all_df[[_ for _ in emo_enc.values()]])
         idx_t = all_idx[[_ for _ in emo_enc.values()]]
         grey_rows = np.where(np.prod(idx_t, axis=1) == True)[0]
+        color_rows = np.where(np.prod(idx_t, axis=1) == False)[0]
 
-        if clustering == 'language':
+        if cluster_by == 'language':
             clus_list = langs
             column = 'language'
-        elif clustering == 'emotion':
+        elif cluster_by == 'emotion':
             clus_list = [_ for _ in emo_enc.values()]
             column = 'emotion'
-        elif clustering == 'quadrant':
+        elif cluster_by == 'quadrant':
             clus_list = [_ for _ in quad_enc.keys()]
             column = 'quadrant'
         else:
             print('Cluster type not selected!')
             sys.exit(0)
 
-        make_cluster_plots(n_dims, all_df, clus_list, column, X_t, idx_t, grey_rows, filter, analysis)
+        # clustering for all labels
+        le = LabelEncoder()
+        labels = le.fit(clus_list).transform(all_df[column])
+        kmeans_labels = cluster.KMeans(n_clusters=len(clus_list)).fit_predict(all_df[[_ for _ in emo_enc.values()]])
+        if filter:
+            kmeans_labels_filt = cluster.KMeans(n_clusters=len(clus_list)).fit_predict(all_df[[_ for _ in emo_enc.values()]].iloc[color_rows])
+            labels_filt = le.fit(clus_list).transform(all_df[column].iloc[color_rows])
+        else:
+            kmeans_labels_filt = None
+            labels_filt = None
+        make_cluster_plots(n_dims, all_df, clus_list, column, X_t, idx_t, grey_rows, filter, analysis, kmeans_labels, kmeans_labels_filt)
 
+        print_cluster_stats(labels, labels_filt, kmeans_labels, kmeans_labels_filt)
 
     # print demographics
     # calculate demographics after filters
@@ -518,7 +628,7 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument('-l',
                         '--language',
-                        help='Select language to process',
+                        help='Select language of surveys to process: [e,g,s,m,a]',
                         required=True,
                         action='store')
     parser.add_argument('-c',
