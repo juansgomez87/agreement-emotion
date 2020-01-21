@@ -97,7 +97,7 @@ def select_filter(filter):
     return sel_preferred_songs, sel_familiar_songs, sel_understood_songs
 
 
-def make_cluster_plots(n_dims, all_df, clus_list, column, X_t, idx_t, grey_rows, filter, title, kmeans_labels, kmeans_labels_filt):
+def make_cluster_plots(n_dims, all_df, clus_list, column, X_t, idx_t, grey_rows, filter, title, clust_labels, clust_labels_filt, clustering):
     import matplotlib.pyplot as plt
     from mpl_toolkits.mplot3d import Axes3D
     from matplotlib.ticker import NullFormatter
@@ -109,7 +109,7 @@ def make_cluster_plots(n_dims, all_df, clus_list, column, X_t, idx_t, grey_rows,
             ax1 = fig.add_subplot(221, projection='3d')
             ax2 = fig.add_subplot(222, projection='3d')
             ax3 = fig.add_subplot(223, projection='3d')
-            ax4 = fig.add_subplot(223, projection='3d')
+            ax4 = fig.add_subplot(224, projection='3d')
         else:
             ax1 = fig.add_subplot(221)
             ax2 = fig.add_subplot(222)
@@ -186,7 +186,6 @@ def make_cluster_plots(n_dims, all_df, clus_list, column, X_t, idx_t, grey_rows,
                             X_t[idx_grey, 1],
                             label=i,
                             c='grey',
-                            marker='x',
                             alpha=0.6,
                             s=4)
                 ax2.set_title('Manifold: {} + filt: {}'.format(title, filter))
@@ -206,18 +205,31 @@ def make_cluster_plots(n_dims, all_df, clus_list, column, X_t, idx_t, grey_rows,
                 ax3.axis('equal')
                 idx_all_col.append(idx_col)
         if n_dims == 3:
-            # TODO implement!
-            pass
+            idx_all_col = [x for y in idx_all_col for x in y]
+            ax4.scatter(xs=X_t[idx_all_col, 0],
+                        ys=X_t[idx_all_col, 1],
+                        zs=X_t[idx_all_col, 2],
+                        alpha=0.6,
+                        s=4,
+                        c=clust_labels_filt,
+                        label=[_ for _ in np.unique(clust_labels_filt)])
+            ax4.set_title('Clustering: {}'.format(clustering))
+            ax4.xaxis.set_major_formatter(NullFormatter())
+            ax4.yaxis.set_major_formatter(NullFormatter())
+            ax4.zaxis.set_major_formatter(NullFormatter())
+            ax4.legend()
         else:
             idx_all_col = [x for y in idx_all_col for x in y]
             ax4.scatter(X_t[idx_all_col, 0],
                         X_t[idx_all_col, 1],
                         alpha=0.6,
                         s=4,
-                        c=kmeans_labels_filt)
-            ax4.set_title('K-Means Clustering')
+                        c=clust_labels_filt,
+                        label=[_ for _ in np.unique(clust_labels_filt)])
+            ax4.set_title('Clustering: {}'.format(clustering))
             ax4.xaxis.set_major_formatter(NullFormatter())
             ax4.yaxis.set_major_formatter(NullFormatter())
+            ax4.legend()
             ax4.axis('equal')
         plt.show()
     # plotting with no filters, only plot original data and k-mean clusters
@@ -262,8 +274,8 @@ def make_cluster_plots(n_dims, all_df, clus_list, column, X_t, idx_t, grey_rows,
                         zs=X_t[:, 2],
                         alpha=0.6,
                         s=4,
-                        c=kmeans_labels)
-            ax2.set_title('K-Means Clustering')
+                        c=clust_labels)
+            ax2.set_title('Clustering: {}'.format(clustering))
             ax2.xaxis.set_major_formatter(NullFormatter())
             ax2.yaxis.set_major_formatter(NullFormatter())
             ax2.zaxis.set_major_formatter(NullFormatter())
@@ -272,23 +284,32 @@ def make_cluster_plots(n_dims, all_df, clus_list, column, X_t, idx_t, grey_rows,
                         X_t[:, 1],
                         alpha=0.6,
                         s=4,
-                        c=kmeans_labels)
-            ax2.set_title('K-Means Clustering')
+                        c=clust_labels)
+            ax2.set_title('Clustering: {}'.format(clustering))
             ax2.xaxis.set_major_formatter(NullFormatter())
             ax2.yaxis.set_major_formatter(NullFormatter())
             ax2.axis('equal')
         plt.show()
 
 
-def print_cluster_stats(labels, labels_filt, kmeans_labels, kmeans_labels_filt):
+def print_cluster_stats(labels, labels_filt, clust_labels, clust_labels_filt, clustering, cluster_analysis):
     from sklearn import metrics
-    rand_all = metrics.adjusted_rand_score(labels, kmeans_labels)
-    mutual_all = metrics.adjusted_mutual_info_score(labels, kmeans_labels)
+    rand_all = metrics.adjusted_rand_score(labels, clust_labels)
+    mutual_all = metrics.adjusted_mutual_info_score(labels, clust_labels)
 
-    if labels_filt is not None and kmeans_labels_filt is not None:
-        rand_filt = metrics.adjusted_rand_score(labels_filt, kmeans_labels_filt)
-        mutual_filt = metrics.adjusted_mutual_info_score(labels_filt, kmeans_labels_filt)
+    if labels_filt is not None and clust_labels_filt is not None:
+        rand_filt = metrics.adjusted_rand_score(labels_filt, clust_labels_filt)
+        mutual_filt = metrics.adjusted_mutual_info_score(labels_filt, clust_labels_filt)
+    else:
+        rand_filt = ''
+        mutual_filt = ''
     print('**********************')
+    print('Clustering algorithm used: {}'.format(clustering))
+    if cluster_analysis:
+        print('- Clustered on embbeding')
+    else:
+        print('- Clustered on complete data')
+    print('Scores:')
     print('Rand score all data: {}, Rand score with filter: {}'.format(rand_all, rand_filt))
     print('Mutual info score all data: {}, Mutual info score with filter: {}'.format(mutual_all, mutual_filt))
     print('**********************')
@@ -481,12 +502,16 @@ def main(data, comp_flag, rem_flag, quad_flag, out_flag, clu_flag, code_lng, num
         from sklearn.decomposition import PCA
         from sklearn.preprocessing import LabelEncoder
         import sklearn.cluster as cluster
+        from sklearn import preprocessing
         import umap
         
         # parameters to be set
         n_dims = 2  # 2 or 3 components for dimensionality reduction
-        analysis = 'mds'  # 'mds', 'pca', 'tsne', 'umap'
+        analysis = 'umap'  # 'mds', 'tsne', 'umap'
         cluster_by = 'quadrant'  # 'language', 'emotion', 'quadrant'
+        clustering = 'kmeans'  # 'kmeans', 'dbscan', 
+        pca = True  # True to perform PCA to extract n_components and update n_dims, False to use defined n_dims
+        cluster_analysis = False  # True to perform clustering on dimension reduction or False to perform on raw data
         save = False  # save data to csv
 
         data = full_data.reindex(full_data.index.rename(['language']))
@@ -515,6 +540,14 @@ def main(data, comp_flag, rem_flag, quad_flag, out_flag, clu_flag, code_lng, num
                     all_df = all_df.append(df, ignore_index=True)
                     all_idx = all_idx.append(idx_df, ignore_index=True)
 
+        # zero mean, unit variance
+        all_df[[_ for _ in emo_enc.values()]] = preprocessing.scale(all_df[[_ for _ in emo_enc.values()]])
+
+        # encode nans as grey rows and color rows as kept ratings
+        idx_t = all_idx[[_ for _ in emo_enc.values()]]
+        grey_rows = np.where(np.prod(idx_t, axis=1) == True)[0]
+        color_rows = np.where(np.prod(idx_t, axis=1) == False)[0]
+
         if save:
             # save output for general lineal model analysis
             if filter:
@@ -523,18 +556,29 @@ def main(data, comp_flag, rem_flag, quad_flag, out_flag, clu_flag, code_lng, num
                 filename = 'results/data_ratings.all.csv'
             all_df.to_csv(filename)
 
+        if pca:
+            # principal component analysis
+            pca = PCA(n_components='mle', svd_solver='full', random_state=1987)
+            pca.fit(all_df[[_ for _ in emo_enc.values()]].iloc[color_rows])
+            n_dims = int(pca.n_components_)
+            print('**********************')
+            print('PCA estimates n_components: {}'.format(n_dims))
+            print('PCA estimates explained variance: {}'.format(pca.explained_variance_ratio_))
+            print('**********************')
+
         # select embedding analysis
         if analysis == 'mds':
             # multidimensional scaling
-            embedding = MDS(n_components=n_dims, random_state=1987, verbose=1)
-        elif analysis == 'pca':
-            # principal component analysis
-            embedding = PCA(n_components=n_dims, random_state=1987)
+            embedding = MDS(n_components=n_dims,
+                            random_state=1987,
+                            metric=True,
+                            verbose=2)
         elif analysis == 'tsne':
             # t-distributed stochastic neighbor embedding
             embedding = TSNE(n_components=n_dims,
                              random_state=1987,
                              init='pca',
+                             perplexity=50,
                              verbose=True)
         elif analysis == 'umap':
             # umap
@@ -549,9 +593,6 @@ def main(data, comp_flag, rem_flag, quad_flag, out_flag, clu_flag, code_lng, num
 
         # fit transforms
         X_t = embedding.fit_transform(all_df[[_ for _ in emo_enc.values()]])
-        idx_t = all_idx[[_ for _ in emo_enc.values()]]
-        grey_rows = np.where(np.prod(idx_t, axis=1) == True)[0]
-        color_rows = np.where(np.prod(idx_t, axis=1) == False)[0]
 
         if cluster_by == 'language':
             clus_list = langs
@@ -569,16 +610,36 @@ def main(data, comp_flag, rem_flag, quad_flag, out_flag, clu_flag, code_lng, num
         # clustering for all labels
         le = LabelEncoder()
         labels = le.fit(clus_list).transform(all_df[column])
-        kmeans_labels = cluster.KMeans(n_clusters=len(clus_list)).fit_predict(all_df[[_ for _ in emo_enc.values()]])
+
+        if cluster_analysis:
+            # use dimensionality reduction to perform clustering
+            data_to_fit = X_t
+            filt_data_to_fit = X_t[color_rows, :]
+        else:
+            # use complete ratings to perform clustering
+            data_to_fit = all_df[[_ for _ in emo_enc.values()]]
+            filt_data_to_fit = all_df[[_ for _ in emo_enc.values()]].iloc[color_rows]
+
+        if clustering == 'kmeans':
+            clust_labels = cluster.KMeans(n_clusters=len(clus_list)).fit_predict(data_to_fit)
+        elif clustering == 'dbscan':
+            eps = 2
+            clust_labels = cluster.DBSCAN(eps=eps).fit_predict(data_to_fit)
+
         if filter:
-            kmeans_labels_filt = cluster.KMeans(n_clusters=len(clus_list)).fit_predict(all_df[[_ for _ in emo_enc.values()]].iloc[color_rows])
+            if clustering == 'kmeans':
+                clust_labels_filt = cluster.KMeans(n_clusters=len(clus_list)).fit_predict(filt_data_to_fit)
+            elif clustering == 'dbscan':
+                clust_labels_filt = cluster.DBSCAN(eps=eps).fit_predict(filt_data_to_fit)
+
             labels_filt = le.fit(clus_list).transform(all_df[column].iloc[color_rows])
         else:
-            kmeans_labels_filt = None
+            clust_labels_filt = None
             labels_filt = None
-        make_cluster_plots(n_dims, all_df, clus_list, column, X_t, idx_t, grey_rows, filter, analysis, kmeans_labels, kmeans_labels_filt)
 
-        print_cluster_stats(labels, labels_filt, kmeans_labels, kmeans_labels_filt)
+        make_cluster_plots(n_dims, all_df, clus_list, column, X_t, idx_t, grey_rows, filter, analysis, clust_labels, clust_labels_filt, clustering)
+
+        print_cluster_stats(labels, labels_filt, clust_labels, clust_labels_filt, clustering, cluster_analysis)
 
     # print demographics
     # calculate demographics after filters
