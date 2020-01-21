@@ -206,30 +206,30 @@ def make_cluster_plots(n_dims, all_df, clus_list, column, X_t, idx_t, grey_rows,
                 idx_all_col.append(idx_col)
         if n_dims == 3:
             idx_all_col = [x for y in idx_all_col for x in y]
-            ax4.scatter(xs=X_t[idx_all_col, 0],
-                        ys=X_t[idx_all_col, 1],
-                        zs=X_t[idx_all_col, 2],
-                        alpha=0.6,
-                        s=4,
-                        c=clust_labels_filt,
-                        label=[_ for _ in np.unique(clust_labels_filt)])
+            scat = ax4.scatter(xs=X_t[idx_all_col, 0],
+                               ys=X_t[idx_all_col, 1],
+                               zs=X_t[idx_all_col, 2],
+                               alpha=0.6,
+                               s=4,
+                               c=clust_labels_filt,
+                               label=[_ for _ in np.unique(clust_labels_filt)])
             ax4.set_title('Clustering: {}'.format(clustering))
             ax4.xaxis.set_major_formatter(NullFormatter())
             ax4.yaxis.set_major_formatter(NullFormatter())
             ax4.zaxis.set_major_formatter(NullFormatter())
-            ax4.legend()
+            ax4.legend(*scat.legend_elements())
         else:
             idx_all_col = [x for y in idx_all_col for x in y]
-            ax4.scatter(X_t[idx_all_col, 0],
-                        X_t[idx_all_col, 1],
-                        alpha=0.6,
-                        s=4,
-                        c=clust_labels_filt,
-                        label=[_ for _ in np.unique(clust_labels_filt)])
+            scat = ax4.scatter(X_t[idx_all_col, 0],
+                               X_t[idx_all_col, 1],
+                               alpha=0.6,
+                               s=4,
+                               c=clust_labels_filt,
+                               label=[_ for _ in np.unique(clust_labels_filt)])
             ax4.set_title('Clustering: {}'.format(clustering))
             ax4.xaxis.set_major_formatter(NullFormatter())
             ax4.yaxis.set_major_formatter(NullFormatter())
-            ax4.legend()
+            ax4.legend(*scat.legend_elements())
             ax4.axis('equal')
         plt.show()
     # plotting with no filters, only plot original data and k-mean clusters
