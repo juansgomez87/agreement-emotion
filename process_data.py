@@ -295,11 +295,11 @@ def make_cluster_plots(n_dims, all_df, clus_list, column, X_t, idx_t, grey_rows,
 def print_cluster_stats(labels, labels_filt, clust_labels, clust_labels_filt, clustering, cluster_analysis):
     from sklearn import metrics
     rand_all = metrics.adjusted_rand_score(labels, clust_labels)
-    mutual_all = metrics.adjusted_mutual_info_score(labels, clust_labels)
+    mutual_all = metrics.adjusted_mutual_info_score(labels, clust_labels, average_method='arithmetic')
 
     if labels_filt is not None and clust_labels_filt is not None:
         rand_filt = metrics.adjusted_rand_score(labels_filt, clust_labels_filt)
-        mutual_filt = metrics.adjusted_mutual_info_score(labels_filt, clust_labels_filt)
+        mutual_filt = metrics.adjusted_mutual_info_score(labels_filt, clust_labels_filt, average_method='arithmetic')
     else:
         rand_filt = ''
         mutual_filt = ''
@@ -499,19 +499,21 @@ def main(data, comp_flag, rem_flag, quad_flag, out_flag, clu_flag, code_lng, num
 
     if clu_flag:
         from sklearn.manifold import MDS, TSNE
-        from sklearn.decomposition import PCA
+        from sklearn.decomposition import PCA, KernelPCA
         from sklearn.preprocessing import LabelEncoder
         import sklearn.cluster as cluster
-        from sklearn import preprocessing
+        from sklearn.preprocessing import StandardScaler
         import umap
         
-        # parameters to be set
-        n_dims = 2  # 2 or 3 components for dimensionality reduction
+        # parameters to be set for clustering experiments
+        n_dims = 3  # 2 or 3 components for dimensionality reduction
         analysis = 'umap'  # 'mds', 'tsne', 'umap'
         cluster_by = 'quadrant'  # 'language', 'emotion', 'quadrant'
         clustering = 'kmeans'  # 'kmeans', 'dbscan', 
+        standardize = True  # True to standardize ratings (ZMUV) or False to keep ratings from 1 to 5
         pca = True  # True to perform PCA to extract n_components and update n_dims, False to use defined n_dims
-        cluster_analysis = False  # True to perform clustering on dimension reduction or False to perform on raw data
+        cluster_analysis = True  # True to perform clustering on embedding or False to perform on raw data
+        plot = True  # True to generate plots, False otherwise
         save = False  # save data to csv
 
         data = full_data.reindex(full_data.index.rename(['language']))
@@ -540,8 +542,10 @@ def main(data, comp_flag, rem_flag, quad_flag, out_flag, clu_flag, code_lng, num
                     all_df = all_df.append(df, ignore_index=True)
                     all_idx = all_idx.append(idx_df, ignore_index=True)
 
-        # zero mean, unit variance
-        all_df[[_ for _ in emo_enc.values()]] = preprocessing.scale(all_df[[_ for _ in emo_enc.values()]])
+        if standardize:
+            # zero mean, unit variance
+            scaler = StandardScaler()
+            all_df[[_ for _ in emo_enc.values()]] = scaler.fit_transform(all_df[[_ for _ in emo_enc.values()]])
 
         # encode nans as grey rows and color rows as kept ratings
         idx_t = all_idx[[_ for _ in emo_enc.values()]]
@@ -558,9 +562,18 @@ def main(data, comp_flag, rem_flag, quad_flag, out_flag, clu_flag, code_lng, num
 
         if pca:
             # principal component analysis
-            pca = PCA(n_components='mle', svd_solver='full', random_state=1987)
-            pca.fit(all_df[[_ for _ in emo_enc.values()]].iloc[color_rows])
+            pca = PCA(n_components='mle',
+                      #svd_solver='full',
+                      whiten=True,
+                      random_state=1987)
+            # pca.fit(all_df[[_ for _ in emo_enc.values()]].iloc[color_rows])
+            pca.fit(all_df[[_ for _ in emo_enc.values()]])
             n_dims = int(pca.n_components_)
+            # kpca = KernelPCA(kernel="rbf", fit_inverse_transform=True)
+            # X_kpca = kpca.fit_transform(all_df[[_ for _ in emo_enc.values()]])
+            # n_dims = X_kpca.shape[1]
+            # print(X_kpca.shape)
+
             print('**********************')
             print('PCA estimates n_components: {}'.format(n_dims))
             print('PCA estimates explained variance: {}'.format(pca.explained_variance_ratio_))
@@ -572,7 +585,8 @@ def main(data, comp_flag, rem_flag, quad_flag, out_flag, clu_flag, code_lng, num
             embedding = MDS(n_components=n_dims,
                             random_state=1987,
                             metric=True,
-                            verbose=2)
+                            n_jobs=-1,
+                            verbose=1)
         elif analysis == 'tsne':
             # t-distributed stochastic neighbor embedding
             embedding = TSNE(n_components=n_dims,
@@ -637,7 +651,8 @@ def main(data, comp_flag, rem_flag, quad_flag, out_flag, clu_flag, code_lng, num
             clust_labels_filt = None
             labels_filt = None
 
-        make_cluster_plots(n_dims, all_df, clus_list, column, X_t, idx_t, grey_rows, filter, analysis, clust_labels, clust_labels_filt, clustering)
+        if plot:
+            make_cluster_plots(n_dims, all_df, clus_list, column, X_t, idx_t, grey_rows, filter, analysis, clust_labels, clust_labels_filt, clustering)
 
         print_cluster_stats(labels, labels_filt, clust_labels, clust_labels_filt, clustering, cluster_analysis)
 
@@ -709,7 +724,7 @@ if __name__ == "__main__":
                         action='store')
     parser.add_argument('-lf',
                         '--lang_filter',
-                        help='Process lyrics for all songs [all], instrumental [inst], english [eng], spanish [spa]',
+                        help='Process songs instrumental [inst], english [eng], spanish [spa], or all songs [all]',
                         required=True,
                         action='store')
     parser.add_argument('-n',
@@ -718,7 +733,7 @@ if __name__ == "__main__":
                         action='store')
     parser.add_argument('-f',
                         '--filter',
-                        help='Select filter for data [preference, familiarity, understanding]',
+                        help='Select filter for data [preference (p1, p2), familiarity (f1, f2), understanding (u1, u2), music training (fm1, fm2), emotion perception (fe1, fe2), general sophistication (fs1, fs2)]',
                         action='store')
     parser.add_argument('-o',
                         '--outlier',
@@ -795,8 +810,6 @@ if __name__ == "__main__":
     # file selection
     if args.language == 'e' or args.language == 'english':
         file_name = ['./results/data_english{}.csv'.format(rem_tx)]
-        # nat_sel = int(input('Please select all english surveys [1] or only native [2]'))
-        # pdb.set_trace()
         lang = ['english']
     elif args.language == 's' or args.language == 'spanish':
         file_name = ['./results/data_spanish{}.csv'.format(rem_tx)]
