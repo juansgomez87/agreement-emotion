@@ -11,11 +11,11 @@ Music Sophistication Index results for participants in each language. We report 
 ![Table 3][table3]
 
 ## Table 4
-Cross-correlations between ratings of emotion for music with lyrics in English. Significance at p &lt; 0\.05 and p  &lt; 0\.01 are depicted with * and **, respectively. <br>
+Cross-correlations between ratings of emotion for music with lyrics in English. Significance at p&lt;0\.05 and p &lt;0\.01 are depicted with * and **, respectively. <br>
 ![Table 4][table4]
 
 ## Figure 1
-Example of web survey in English. <br>
+Example of web survey in English for the annotation of an excerpt made in Psytoolkit: we used synonyms for each emotion and a 5-point Likert response format. <br>
 ![Figure 1][fig1]
 
 ## Figure 2
