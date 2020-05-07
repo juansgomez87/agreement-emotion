@@ -338,9 +338,11 @@ def main(data, comp_flag, rem_flag, quad_flag, out_flag, clu_flag, code_lng, num
     list_spa = ['peace_2', 'sad_2', 'tender_2']
     list_non_eng = list_spa + list_inst
     list_eng = [_ for _ in list_songs if _ not in list_non_eng]
+    list_lyr = list_eng + list_spa
+
     # select songs depending on lyrics to process
     if lang_filter == 'all':
-        txt_lyrics = 'with lyrics in all languages'
+        txt_lyrics = 'with all songs (instrumental and with lyrics)'
     elif lang_filter == 'inst':
         list_songs = list_inst
         txt_lyrics = 'with instrumental music'
@@ -349,6 +351,9 @@ def main(data, comp_flag, rem_flag, quad_flag, out_flag, clu_flag, code_lng, num
         txt_lyrics = 'with lyrics in english'
     elif lang_filter == 'spa':
         list_songs = list_spa
+        txt_lyrics = 'with lyrics in spanish'
+    elif lang_filter == 'lyrics':
+        list_songs = list_lyr
         txt_lyrics = 'with lyrics in spanish'
 
     # results dictionaries for emotions
@@ -425,10 +430,10 @@ def main(data, comp_flag, rem_flag, quad_flag, out_flag, clu_flag, code_lng, num
         df = data[data['mus_soph:1'] > mean_soph]
         data[data['mus_soph:1'] < mean_soph] = np.nan
     elif filter == 'fs2':
-        txt_soph = 'F6 - General sophistication(negative (>mean))\n'
+        txt_soph = 'F6 - General sophistication (negative (>mean))\n'
         df = data[data['mus_soph:1'] < mean_soph]
         data[data['mus_soph:1'] > mean_soph] = np.nan
-    if filter == 'fm1' or filter == 'fm2' or filter == 'fe1' or filter == 'fe2' or filter == 'fs1' or filter == 'fms2':
+    if filter == 'fm1' or filter == 'fm2' or filter == 'fe1' or filter == 'fe2' or filter == 'fs1' or filter == 'fs2':
         cnt_soph = df.shape[0] * len(emo_enc) * len(list_songs)
     else:
         cnt_soph = 0
@@ -502,6 +507,7 @@ def main(data, comp_flag, rem_flag, quad_flag, out_flag, clu_flag, code_lng, num
         from sklearn.decomposition import PCA, KernelPCA
         from sklearn.preprocessing import LabelEncoder
         import sklearn.cluster as cluster
+        from sklearn import mixture
         from sklearn.preprocessing import StandardScaler
         import umap
         
@@ -509,7 +515,7 @@ def main(data, comp_flag, rem_flag, quad_flag, out_flag, clu_flag, code_lng, num
         n_dims = 3  # 2 or 3 components for dimensionality reduction
         analysis = 'umap'  # 'mds', 'tsne', 'umap'
         cluster_by = 'quadrant'  # 'language', 'emotion', 'quadrant'
-        clustering = 'kmeans'  # 'kmeans', 'dbscan', 
+        clustering = 'gmm'  # 'kmeans', 'dbscan', 'gmm'
         standardize = True  # True to standardize ratings (ZMUV) or False to keep ratings from 1 to 5
         pca = True  # True to perform PCA to extract n_components and update n_dims, False to use defined n_dims
         cluster_analysis = True  # True to perform clustering on embedding or False to perform on raw data
@@ -639,12 +645,17 @@ def main(data, comp_flag, rem_flag, quad_flag, out_flag, clu_flag, code_lng, num
         elif clustering == 'dbscan':
             eps = 2
             clust_labels = cluster.DBSCAN(eps=eps).fit_predict(data_to_fit)
+        elif clustering == 'gmm':
+            clust_labels = mixture.GaussianMixture(n_components=len(clus_list), covariance_type='full').fit_predict(data_to_fit)
+
 
         if filter:
             if clustering == 'kmeans':
                 clust_labels_filt = cluster.KMeans(n_clusters=len(clus_list)).fit_predict(filt_data_to_fit)
             elif clustering == 'dbscan':
                 clust_labels_filt = cluster.DBSCAN(eps=eps).fit_predict(filt_data_to_fit)
+            elif clustering == 'gmm':
+                clust_labels_filt = mixture.GaussianMixture(n_components=len(clus_list), covariance_type='full').fit_predict(filt_data_to_fit)
 
             labels_filt = le.fit(clus_list).transform(all_df[column].iloc[color_rows])
         else:
@@ -724,7 +735,7 @@ if __name__ == "__main__":
                         action='store')
     parser.add_argument('-lf',
                         '--lang_filter',
-                        help='Process songs instrumental [inst], english [eng], spanish [spa], or all songs [all]',
+                        help='Process songs instrumental [inst], english [eng], spanish [spa], with lyrics [lyrics], or all songs [all]',
                         required=True,
                         action='store')
     parser.add_argument('-n',
@@ -766,7 +777,7 @@ if __name__ == "__main__":
         args.filter is not None):
         print('Please choose a valid filter!')
         sys.exit(0)
-    if args.lang_filter != 'all' and args.lang_filter != 'inst' and args.lang_filter != 'eng' and args.lang_filter != 'spa' and args.lang_filter is not None:
+    if args.lang_filter != 'all' and args.lang_filter != 'lyrics' and args.lang_filter != 'inst' and args.lang_filter != 'eng' and args.lang_filter != 'spa' and args.lang_filter is not None:
         print('Please choose a valid lyrics filter!')
         sys.exit(0)   
 
