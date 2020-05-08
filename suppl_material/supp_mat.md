@@ -3,11 +3,11 @@ Song selection with emotion and quadrant information for annotation analysis, in
 ![Table 1][table1]
 
 ## Table 2
-Results from Median Test and Kruskal-Wallis H Test: German (N=374), English (N=572), Mandarin (N=594), Spanish (N=1232). Significance at p &lt;0\.01 is depicted with **. <br>
+Music Sophistication Index results for participants in each language. We report mean and standard deviation for each factor. First column reports the possible ranges of each score and population means from the original study. <br>
 ![Table 2][table2]
 
 ## Table 3
-Music Sophistication Index results for participants in each language. We report mean and standard deviation for each factor. First column reports the possible ranges of each score and population means from the original study. <br>
+Results from Median Test and Kruskal-Wallis H Test: German (N=374), English (N=572), Mandarin (N=594), Spanish (N=1232). Significance at p &lt;0\.01 is depicted with **. <br>
 ![Table 3][table3]
 
 ## Table 4
