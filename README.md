@@ -2,46 +2,42 @@
 
 ## Abstract
 
-In our present study, we address the relation between the emotions perceived in pop and rock music and the language spoken by the listener. Two main research questions are addressed:
-
-1. Are there differences/correlations between the emotions perceived in pop/rock music by
-listeners raised with different mother tongues?
-2. Do personal characteristics have an influence on the perceived emotions for listeners of a
-given language?
-
-Our hypothesis is that there will be higher agreement (as defined by the Krippendorff alpha
-coefficient) in the perceived emotions by subjects that speak the same language.
-
-We use fragments of pop and rock music since these musical styles can be considered as neutral and homogeneous even when sung in different languages. All fragments are in either English or Spanish. We use the emotion tags of the Geneva Emotion Music Scale (GEMS) and compliment with other emotion tags to rate the different fragments. To collect user ratings, we created online surveys in four languages (Spanish, English, German and Mandarin) using two excerpts per emotion, for a total of 22 excerpts. Besides emotion ratings, we also collect information about musical knowledge, musical taste, listeners’ familiarity with the stimuli, listeners’ understanding of the lyrics, and demographics. We aim to characterize perceived emotion
-with respect to these factors, and attempt to replicate previous studies that show lower agreement in perceived emotions among subjects with more musical experience and knowledge.
+Tagging a musical excerpt with an emotion descriptor may result in a vague and ambivalent exercise. This subjectivity entangles several high-level music description tasks when the computational models built to address them produce predictions on the basis of a "ground truth". In this study, we investigate the relationship between emotions perceived in pop and rock music (mainly in Euro-American styles) and personal characteristics from the listener, using mother language as a key feature. Our goal is to understand the influence of lyrics comprehension on music emotion perception and use this knowledge to improve Music Emotion Recognition (MER) models. <!---
+We systematically analyze 30492 annotations of 22 musical fragments to assess the impact of individual differences on agreement, as defined by Krippendorff's $\alpha$ coefficient. We employ personal characteristics to form group-based annotations by assembling ratings with respect to listeners' familiarity, preference, lyrics comprehension, and music sophistication. Finally, we study our group-based annotations in a two-fold approach: (1) assessing the similarity within annotations using manifold learning algorithms and unsupervised clustering, and (2) analyzing their performance by training classification models with diverse "ground truths". Our results suggest that a) applying a broader categorization of taxonomies and b) using multi-label, group-based annotations based on language, can be beneficial for MER models.
+-->
 
 ## Usage
 
+### Agreement analysis
+
+The process_data.py file allows to analyze annotations for agreement and cluster annotations using different manifold learning algorithms. For an one of the examples seen in the paper, run the following code:
 ```python
-usage: process_data.py [-h] -l LANGUAGE -c COMPLETE -r REMOVE -q QUADRANT -lf
-                       LANG_FILTER [-n NUMBER] [-f FILTER]
+python3 process_data.py -l a -c n -r n -q n -lf lyrics -clu y -f u1
+```
+This script analyzes agreement across all surveys (-l a), uses only full responses (-c n), uses raw annotations (-r n), does not map emotions to quadrants (-q n), uses only songs with lyrics (-lf lyrics), processes clusters using manifold learning (-clu y), and filters data w.r.t. positive understanding of lyrics (-f u1).
 
-optional arguments:
-  -h, --help            show this help message and exit
-  -l LANGUAGE, --language LANGUAGE
-                        Select language to process
-  -c COMPLETE, --complete COMPLETE
-                        Complete ratings [y] or drop missing/NaN ratings [n]
-  -r REMOVE, --remove REMOVE
-                        Keep neutral ratings [y] or not [n]
-  -q QUADRANT, --quadrant QUADRANT
-                        Process by quadrants [y] or by emotions [n]
-  -lf LANG_FILTER, --lang_filter LANG_FILTER
-                        Process lyrics for all songs [all], instrumental
-                        [inst], english [eng], spanish [spa]
-  -n NUMBER, --number NUMBER
-                        Number of surveys to process with random sampling
-  -f FILTER, --filter FILTER
-                        Select filter for data [preference, familiarity,
-                        understanding, instrumental, spanish, english]
-
+For usage flags, use:
+```python
+python3 process_data.py -h
 ```
 
-## Data Analysis
+### Classification
+The classifier.py file trains a Support Vector Machine classifier and compares the performance of different "ground truths". For one of the examples seen in the paper, run the following code:
+```python
+python3 classifier.py -l a -q n -m svm -nc 8 -f u1
+```
+This script trains classifiers using annotations from all surveys (-l a), does not map emotions to quadrants (-q n), uses a support vector machine classifier (-m svm), uses 8 components for PCA, and filters data w.r.t. positive understanding of lyrics (-f u1).
 
-[Agreement results](https://docs.google.com/spreadsheets/d/16rNh481Zs8CZTdJTmnME2i84R1JXFegIC0WcNZ5rds8/edit#gid=0)
+For usage flags, use:
+```python
+python3 classifier.py -h
+```
+
+## Publication
+```
+@InProceedings{Gomez2020,
+	author = {Juan Sebasti{\'a}n G{\'o}mez Ca{\~n}{\'o}n and Estefan{'i}a Cano and Perfecto Herrera and Emilia G{\'o}mez},
+	title = {Blind review},
+	year = {2020},
+}
+```
