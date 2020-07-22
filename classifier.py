@@ -25,9 +25,9 @@ class SVMClassifier():
                  quadrant,
                  filter,
                  num_comp):
-        self.ratings = pd.read_csv('data_ratings.all.csv')
+        self.ratings = pd.read_csv('results/data_ratings.all.csv')
         # self.annotations = pd.read_csv('annotations.csv')
-        self.annotations = pd.read_csv('annotations_5s.csv')
+        self.annotations = pd.read_csv('results/annotations_5s.csv')
         # self.annotations = pd.read_csv('annotations_10s.csv')
         self.pca_plot = False
         self.plot_anno_flag = True

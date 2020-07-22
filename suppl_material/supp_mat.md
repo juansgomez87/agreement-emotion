@@ -7,7 +7,7 @@ Music Sophistication Index results for participants in each language. We report 
 ![Table 2][table2]
 
 ## Table 3
-Results from Median Test and Kruskal-Wallis H Test: German (N=374), English (N=572), Mandarin (N=594), Spanish (N=1232). Significance at p &lt;0\.01 is depicted with **. <br>
+Results from Median Test and Kruskal-Wallis H Test: German (N=374), English (N=572), Mandarin (N=594), Spanish (N=1232). Significance at p&lt;0\.01 is depicted with **. Consecutive paiwise Mann-Whitney U Tests (M-W) were performed with Bonferroni correction alpha = 0.05 / 6, yielding significance at p&lt;0\.00833 and depicted with ***.<br>
 ![Table 3][table3]
 
 ## Table 4
