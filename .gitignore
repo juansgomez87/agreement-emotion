@@ -2,15 +2,14 @@ essentia.py
 questions.txt
 file_quads.txt
 results/data_spanish.clust.csv
-results/data_ratings.fs1.csv
-results/data_mandarin.clust.csv
-results/data_german.clust.csv
-results/data_english.clust.csv
-results/data.und_pos.csv
-results/data.und_neg.csv
-results/data.pre_pos.csv
-results/data.pre_neg.csv
-results/data.fam_pos.csv
+results/data_mandarin.clust.csv 
+results/data_german.clust.csv 
+results/data_english.clust.csv 
+results/data.und_pos.csv 
+results/data.und_neg.csv 
+results/data.pre_pos.csv 
+results/data.pre_neg.csv 
+results/data.fam_pos.csv 
 results/data.fam_neg.csv
 
 

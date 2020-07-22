@@ -2,7 +2,7 @@ import numpy as np
 import pandas as pd
 import csv
 import argparse
-import krippendorf
+import krippendorff
 import os
 import sys
 
@@ -331,7 +331,7 @@ def main(data, comp_flag, rem_flag, quad_flag, out_flag, clu_flag, code_lng, num
                 'q3_a_neg_v_neg': ['bitter', 'sad'],
                 'q4_a_neg_v_pos': ['peace', 'tender', 'transcendence']}
     # get list of songs
-    dirs = os.listdir('./data_normalized')
+    dirs = os.listdir('./audio')
     list_songs = [_.replace('.mp3', '') for _ in dirs]
 
     list_inst = ['anger_2', 'fear_1']
@@ -515,7 +515,7 @@ def main(data, comp_flag, rem_flag, quad_flag, out_flag, clu_flag, code_lng, num
         n_dims = 3  # 2 or 3 components for dimensionality reduction
         analysis = 'umap'  # 'mds', 'tsne', 'umap'
         cluster_by = 'quadrant'  # 'language', 'emotion', 'quadrant'
-        clustering = 'gmm'  # 'kmeans', 'dbscan', 'gmm'
+        clustering = 'kmeans'  # 'kmeans', 'dbscan', 'gmm'
         standardize = True  # True to standardize ratings (ZMUV) or False to keep ratings from 1 to 5
         pca = True  # True to perform PCA to extract n_components and update n_dims, False to use defined n_dims
         cluster_analysis = True  # True to perform clustering on embedding or False to perform on raw data
@@ -689,7 +689,7 @@ def main(data, comp_flag, rem_flag, quad_flag, out_flag, clu_flag, code_lng, num
             dict_quad_mean[key] = np.mean(mean_raters[idx])
             dict_quad_std[key] = np.mean(std_raters[idx])
             # agreement alpha
-            dict_quad_agree[key] = krippendorf.alpha(reliability_data=data[idx],
+            dict_quad_agree[key] = krippendorff.alpha(reliability_data=data[idx],
                                                      level_of_measurement='ordinal')
             # pdb.set_trace()
         print_results(dict_quad_mean, dict_quad_std, dict_quad_agree, pretty_print)
@@ -703,7 +703,7 @@ def main(data, comp_flag, rem_flag, quad_flag, out_flag, clu_flag, code_lng, num
             dict_emo_std[emo_enc[key]] = np.mean(std_raters[idx])
             # agreement alpha
             # pdb.set_trace()
-            dict_emo_agree[emo_enc[key]] = krippendorf.alpha(reliability_data=data[idx],
+            dict_emo_agree[emo_enc[key]] = krippendorff.alpha(reliability_data=data[idx],
                                                              level_of_measurement='ordinal')
             # test = krippendorf.alpha(reliability_data=data[idx], level_of_measurement='nominal')
             # print(dict_emo_agree[emo_enc[key]], test)
