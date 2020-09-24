@@ -38,7 +38,7 @@ python3 classifier.py -h
 @InProceedings{GomezCanon2020ISMIR,
     author = {Juan Sebasti{\'a}n G{\'o}mez-Ca{\~n}{\'o}n and Estefan{\'i}a Cano and Perfecto Herrera and Emilia G{\'o}mez},
     title = {Joyful for you and tender for us: the influence of individual characteristics and language on emotion labeling and classification},
-    booktitle = {Proceedings of the 21th International Society for Music Information Retrieval Conference (ISMIR)}
+    booktitle = {Proceedings of the 21th International Society for Music Information Retrieval Conference (ISMIR)},
 year = {2020},
     location = {Montr{\'e}al, Canada},
     pages = {},
